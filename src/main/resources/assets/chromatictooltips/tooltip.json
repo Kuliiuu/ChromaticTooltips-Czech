@@ -1,0 +1,35 @@
+{
+    "style": {
+        "margin": 2,
+        "padding": 4,
+
+        "offsetMain": 6,
+        "offsetCross": -18,
+
+        "defaultColor": "0x808080",
+
+        "decorators": [{
+            "type": "background",
+            "color": "0xF0100010",
+            "corner": false
+        },{
+            "type": "border",
+            "color": ["0x505000ff", "0x5028007F"],
+            "margin": 1
+        }],
+
+        "spacing": {
+            "paragraph": 8,
+            "section": 6,
+            "hr": 6
+        },
+
+        "title": {
+            "defaultColor": "0xFFFFFFFF"
+        },
+
+        "navigation": {
+            "marginTop": 6
+        }
+    }
+}

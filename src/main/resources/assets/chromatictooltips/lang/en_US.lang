@@ -1,0 +1,18 @@
+key.categories.chromatictooltips=Chromatic Tooltips
+key.chromatictooltips.next_page=Next Page
+key.chromatictooltips.previous_page=Previous Page
+
+chromatictooltips.key.alt=ALT
+
+chromatictooltips.navigation.page=Page: %s / %s [Press %s for next, %s for prev]
+chromatictooltips.navigation.page.next_only=Page: %s / %s [Press %s for next]
+chromatictooltips.navigation.page.previous_only=Page: %s / %s [Press %s for prev]
+
+chromatictooltips.enricher.stacksize.item=Count: %s
+chromatictooltips.enricher.stacksize.fluid=Amount: %s
+
+chromatictooltips.enricher.hotkeys.message=Hold %s for hotkeys
+
+nei.options.inventory.hotkeysHelpText=Show Hotkeys Help Text
+nei.options.inventory.hotkeysHelpText.true=Yes
+nei.options.inventory.hotkeysHelpText.false=No
