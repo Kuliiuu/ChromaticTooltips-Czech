@@ -42,7 +42,7 @@ public class ModInfoEnricher implements ITooltipEnricher {
     public TooltipLines build(TooltipContext context) {
         final ItemStack stack = context.getStack();
 
-        if (stack == null) {
+        if (stack == null || !ClientUtil.mc().gameSettings.advancedItemTooltips) {
             return null;
         }
 
@@ -50,7 +50,7 @@ public class ModInfoEnricher implements ITooltipEnricher {
         final UniqueIdentifier identifier = getIdentifier(stack);
         final String modname = nameFromStack(identifier);
 
-        if (ClientUtil.isCtrlKeyDown() && ClientUtil.mc().gameSettings.advancedItemTooltips) {
+        if (ClientUtil.isCtrlKeyDown()) {
             final boolean modnameEqualsModId = modname.replaceAll("\\s+", "")
                 .equalsIgnoreCase(identifier.modId.replaceAll("\\s+", ""));
 
