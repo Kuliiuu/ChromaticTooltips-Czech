@@ -34,7 +34,7 @@ public class TooltipContext {
         this.context = request.context;
         this.animationStartTime = System.currentTimeMillis();
         this.stack = request.stack != null ? request.stack.copy() : null;
-        this.contextTooltip.addAll(request.tooltip.buildComponents(this));
+        this.contextTooltip = request.tooltip.buildComponents(this);
     }
 
     public void setStack(ItemStack stack) {
@@ -112,6 +112,11 @@ public class TooltipContext {
             this.activeModifier = activeModifier;
             this.revision++;
         }
+    }
+
+    public void setContextTooltip(TooltipLines tooltip) {
+        this.contextTooltip = tooltip.buildComponents(this);
+        this.revision++;
     }
 
     public List<ITooltipComponent> getContextTooltip() {

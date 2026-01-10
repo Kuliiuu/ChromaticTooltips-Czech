@@ -30,9 +30,13 @@ public class EnricherConfig {
     @Config.DefaultBoolean(true)
     public static boolean stackSizeEnabled;
 
-    @Config.Comment("Include the player's inventory when calculating stack sizes.")
+    @Config.Comment("Include the container's inventory when calculating stack sizes.")
     @Config.DefaultBoolean(true)
-    public static boolean includePlayerInventoryEnabled;
+    public static boolean includeContainerInventoryEnabled;
+
+    @Config.Comment("Only show stack size information when the stack size exceeds the item's max stack size.")
+    @Config.DefaultBoolean(false)
+    public static boolean showOnlyWhenOverStackSizeEnabled;
 
     @Config.Comment("Show enchantment icons in tooltips.")
     @Config.DefaultBoolean(true)

@@ -3,7 +3,6 @@ package com.slprime.chromatictooltips.enricher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,10 +12,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.StatCollector;
 
-import com.slprime.chromatictooltips.api.AttributeModifierData;
 import com.slprime.chromatictooltips.api.EnricherPlace;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.ITooltipEnricher;
+import com.slprime.chromatictooltips.api.ItemStats;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
@@ -25,7 +24,7 @@ import com.slprime.chromatictooltips.event.AttributeEnricherEvent;
 import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
 
-public class AttributeModifierEnricher implements ITooltipEnricher {
+public class ItemStatsEnricher implements ITooltipEnricher {
 
     protected static class InlineComponent implements ITooltipComponent {
 
@@ -123,23 +122,16 @@ public class AttributeModifierEnricher implements ITooltipEnricher {
 
     }
 
-    protected static final Map<String, String> ATTRIBUTE_ICONS = new HashMap<>();
+    protected static final String SECTION_ID = "stats";
     protected boolean showOnlyIcons = false;
 
-    static {
-        ATTRIBUTE_ICONS.put("generic.attackDamage", "attributes/attack_damage.png");
-        ATTRIBUTE_ICONS.put("generic.maxHealth", "attributes/max_health.png");
-        ATTRIBUTE_ICONS.put("generic.knockbackResistance", "attributes/knockback_resistance.png");
-        ATTRIBUTE_ICONS.put("generic.movementSpeed", "attributes/movement_speed.png");
-    }
-
-    public AttributeModifierEnricher(boolean showOnlyIcons) {
+    public ItemStatsEnricher(boolean showOnlyIcons) {
         this.showOnlyIcons = showOnlyIcons;
     }
 
     @Override
     public String sectionId() {
-        return this.showOnlyIcons ? "attributes:icons" : "attributes";
+        return SECTION_ID + (this.showOnlyIcons ? ":icons" : "");
     }
 
     @Override
@@ -155,7 +147,7 @@ public class AttributeModifierEnricher implements ITooltipEnricher {
 
     protected boolean shownIcons(TooltipContext context) {
         return EnricherConfig.attributeModifierIconsEnabled && context.getRenderer()
-            .getEnricherModes("attributes:icons", EnumSet.of(TooltipModifier.NONE))
+            .getEnricherModes(SECTION_ID + ":icons", EnumSet.of(TooltipModifier.NONE))
             .contains(context.getActiveModifier());
     }
 
@@ -168,10 +160,10 @@ public class AttributeModifierEnricher implements ITooltipEnricher {
         }
 
         final boolean shownIcons = !this.showOnlyIcons && shownIcons(context);
-        final List<AttributeModifierData> attributeModifiers = getAttributeModifiers(context, stack);
+        final List<ItemStats> attributeModifiers = getAttributeModifiers(context, stack);
         final List<ITooltipComponent> attributeModifiersList = new ArrayList<>();
 
-        for (final AttributeModifierData attributeData : attributeModifiers) {
+        for (final ItemStats attributeData : attributeModifiers) {
             if (this.showOnlyIcons && attributeData.hasIcon()) {
                 attributeModifiersList.add(attributeData.getIconComponent());
             } else if (!this.showOnlyIcons && (!shownIcons || !attributeData.hasIcon())) {
@@ -187,76 +179,76 @@ public class AttributeModifierEnricher implements ITooltipEnricher {
 
     }
 
-    protected static List<AttributeModifierData> getAttributeModifiers(TooltipContext context, ItemStack stack) {
-        final List<AttributeModifierData> attributeModifiers = new ArrayList<>();
+    protected static List<ItemStats> getAttributeModifiers(TooltipContext context, ItemStack stack) {
+        final List<ItemStats> stats = new ArrayList<>();
 
         for (Map.Entry<String, AttributeModifier> entry : stack.getAttributeModifiers()
             .entries()) {
-            final String attributeName = StatCollector.translateToLocal("attribute.name." + entry.getKey());
-            attributeModifiers.add(
-                new AttributeModifierData(attributeName, entry.getValue(), stack)
-                    .withIcon(ATTRIBUTE_ICONS.getOrDefault(entry.getKey(), null)));
+
+            if ("generic.attackDamage".equals(entry.getKey())) {
+                stats.add(new ItemStats.AttackDamageStats(ItemStats.getModifiedAmount(entry.getValue(), stack)));
+            } else if ("generic.maxHealth".equals(entry.getKey())) {
+                stats.add(new ItemStats.MaxHealthStats(ItemStats.getModifiedAmount(entry.getValue(), stack)));
+            } else if ("generic.knockbackResistance".equals(entry.getKey())) {
+                stats.add(new ItemStats.KnockbackResistanceStats(ItemStats.getModifiedAmount(entry.getValue(), stack)));
+            } else if ("generic.movementSpeed".equals(entry.getKey())) {
+                stats.add(new ItemStats.MovementSpeedStats(ItemStats.getModifiedAmount(entry.getValue(), stack)));
+            } else {
+                final String attributeName = StatCollector.translateToLocal("attribute.name." + entry.getKey());
+                final double modifiedAmount = ItemStats.getModifiedAmount(entry.getValue(), stack);
+
+                stats.add(
+                    new ItemStats(
+                        attributeName,
+                        modifiedAmount,
+                        ItemStats.StatsOperator.fromOperation(
+                            entry.getValue()
+                                .getOperation()),
+                        null));
+            }
         }
 
         if (stack.getItem() instanceof ItemArmor armor) {
-            attributeModifiers.add(
-                new AttributeModifierData(
-                    ClientUtil.translate(
-                        "enricher.attributes.armor.text",
-                        ClientUtil.formatNumbers(armor.damageReduceAmount)),
-                    ClientUtil.translate(
-                        "enricher.attributes.armor.icon",
-                        ClientUtil.formatNumbers(armor.damageReduceAmount)),
-                    armor.damageReduceAmount,
-                    "attributes/armor.png"));
+            stats.add(new ItemStats.ArmorStats(armor.damageReduceAmount));
         }
 
-        final AttributeEnricherEvent event = new AttributeEnricherEvent(context, attributeModifiers);
-        ClientUtil.postEvent(event);
-
-        Collections.sort(
-            event.attributeModifiers,
-            (AttributeModifierData a, AttributeModifierData b) -> Double.compare(b.getValue(), a.getValue()));
-
-        addUnbreakableAttribute(stack, event.attributeModifiers);
+        addUnbreakableAttribute(stack, stats);
 
         if (EnricherConfig.durabilityEnabled) {
-            addDurabilityAttribute(stack, event.attributeModifiers);
+            addDurabilityAttribute(stack, stats);
         }
 
         if (EnricherConfig.burnTimeEnabled) {
-            addFuelAttribute(stack, event.attributeModifiers);
+            addBurnTimeAttribute(stack, stats);
         }
 
-        return event.attributeModifiers;
+        final AttributeEnricherEvent event = new AttributeEnricherEvent(context, stats);
+        ClientUtil.postEvent(event);
+
+        Collections.sort(event.stats, (ItemStats a, ItemStats b) -> Double.compare(b.getOrder(), a.getOrder()));
+
+        return event.stats;
     }
 
-    private static void addUnbreakableAttribute(ItemStack stack, List<AttributeModifierData> attributeModifiers) {
+    private static void addUnbreakableAttribute(ItemStack stack, List<ItemStats> stats) {
         if (stack.hasTagCompound() && stack.getTagCompound()
             .getBoolean("Unbreakable")) {
-            final String textLine = StatCollector.translateToLocal("item.unbreakable");
-            attributeModifiers.add(new AttributeModifierData(textLine, null, 0, null));
+            stats.add(new ItemStats.UnbreakableStats());
         }
     }
 
-    private static void addDurabilityAttribute(ItemStack stack, List<AttributeModifierData> attributeModifiers) {
+    private static void addDurabilityAttribute(ItemStack stack, List<ItemStats> stats) {
         if (stack.isItemStackDamageable()) {
-            final int maxDamage = stack.getMaxDamage();
-            final int value = maxDamage - stack.getItemDamageForDisplay();
-            final String textLine = ClientUtil.translate("enricher.attributes.durability.text", value, maxDamage);
-            final String iconLine = ClientUtil.translate("enricher.attributes.durability.icon", value, maxDamage);
-            attributeModifiers.add(new AttributeModifierData(textLine, iconLine, value, "attributes/durability.png"));
+            final int maxDurability = stack.getMaxDamage();
+            final int durability = maxDurability - stack.getItemDamageForDisplay();
+            stats.add(new ItemStats.DurabilityStats(durability, maxDurability));
         }
     }
 
-    private static void addFuelAttribute(ItemStack stack, List<AttributeModifierData> attributeModifiers) {
-        final int time = TileEntityFurnace.getItemBurnTime(stack);
-        if (time > 0) {
-            final String textLine = ClientUtil
-                .translate("enricher.attributes.fuel.text", ClientUtil.formatNumbers(time));
-            final String iconLine = ClientUtil
-                .translate("enricher.attributes.fuel.icon", ClientUtil.formatNumbers(time));
-            attributeModifiers.add(new AttributeModifierData(textLine, iconLine, time, "attributes/fuel.png"));
+    private static void addBurnTimeAttribute(ItemStack stack, List<ItemStats> stats) {
+        final int burnTime = TileEntityFurnace.getItemBurnTime(stack);
+        if (burnTime > 0) {
+            stats.add(new ItemStats.BurnTimeStats(burnTime));
         }
     }
 

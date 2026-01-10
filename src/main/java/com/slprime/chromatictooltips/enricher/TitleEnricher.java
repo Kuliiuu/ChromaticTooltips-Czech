@@ -17,6 +17,7 @@ import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.TextComponent;
 import com.slprime.chromatictooltips.event.ItemTitleEnricherEvent;
 import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipFontContext;
 
 public class TitleEnricher implements ITooltipEnricher {
 
@@ -25,9 +26,12 @@ public class TitleEnricher implements ITooltipEnricher {
         protected ITooltipComponent identifierComponent;
 
         public StackTitleTooltipComponent(String title, ITooltipComponent identifierComponent) {
-            super(title + " ");
-            this.width += identifierComponent.getWidth();
+            super(title);
             this.identifierComponent = identifierComponent;
+
+            if (identifierComponent.getWidth() > 0) {
+                this.width += TooltipFontContext.getStringWidth(" ") + identifierComponent.getWidth();
+            }
         }
 
         @Override
@@ -66,15 +70,20 @@ public class TitleEnricher implements ITooltipEnricher {
         if (stack == null) {
             final List<ITooltipComponent> lines = context.getContextTooltip();
 
-            if (!lines.isEmpty() && lines.get(0) instanceof TextComponent title) {
-                String line = title.getLines()
-                    .get(0);
+            if (!lines.isEmpty()) {
 
-                if (ClientUtil.getColorCodeIndex(line) == TooltipLines.BASE_COLOR.ordinal()) {
-                    line = EnumChatFormatting.WHITE + line.replaceAll("^(?:§[0-9a-fk-or])+", "");
+                if (lines.get(0) instanceof TextComponent title) {
+                    String line = title.getLines()
+                        .get(0);
+
+                    if (ClientUtil.getColorCodeIndex(line) == TooltipLines.BASE_COLOR.ordinal()) {
+                        line = EnumChatFormatting.WHITE + line.replaceAll("^(?:§[0-9a-fk-or])+", "");
+                    }
+                    return new TooltipLines(line);
+                } else {
+                    return new TooltipLines(lines.get(0));
                 }
 
-                return new TooltipLines(line);
             }
 
             return null;

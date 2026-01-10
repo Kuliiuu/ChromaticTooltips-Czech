@@ -9,11 +9,11 @@ import net.minecraftforge.common.MinecraftForge;
 
 import org.lwjgl.input.Keyboard;
 
-import com.slprime.chromatictooltips.enricher.AttributeModifierEnricher;
 import com.slprime.chromatictooltips.enricher.ContextInfoEnricher;
 import com.slprime.chromatictooltips.enricher.EnchantmentEnricher;
 import com.slprime.chromatictooltips.enricher.HotkeyEnricher;
 import com.slprime.chromatictooltips.enricher.ItemInfoEnricher;
+import com.slprime.chromatictooltips.enricher.ItemStatsEnricher;
 import com.slprime.chromatictooltips.enricher.KeyboardModifierEnricher;
 import com.slprime.chromatictooltips.enricher.ModInfoEnricher;
 import com.slprime.chromatictooltips.enricher.OreDictionaryEnricher;
@@ -55,12 +55,12 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
 
         TooltipHandler.addEnricher(new TitleEnricher());
         TooltipHandler.addEnricher(new KeyboardModifierEnricher());
-        TooltipHandler.addEnricher(new AttributeModifierEnricher(true));
+        TooltipHandler.addEnricher(new ItemStatsEnricher(true));
         TooltipHandler.addEnricher(new StackSizeEnricher());
         TooltipHandler.addEnricher(new HotkeyEnricher());
         TooltipHandler.addEnricher(new ItemInfoEnricher());
         TooltipHandler.addEnricher(new EnchantmentEnricher());
-        TooltipHandler.addEnricher(new AttributeModifierEnricher(false));
+        TooltipHandler.addEnricher(new ItemStatsEnricher(false));
         TooltipHandler.addEnricher(new OreDictionaryEnricher());
         TooltipHandler.addEnricher(new ContextInfoEnricher());
         TooltipHandler.addEnricher(new ModInfoEnricher());

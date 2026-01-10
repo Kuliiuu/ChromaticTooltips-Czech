@@ -5,8 +5,6 @@ import java.util.EnumSet;
 
 import net.minecraft.util.EnumChatFormatting;
 
-import org.lwjgl.opengl.GL11;
-
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipModifier;
@@ -17,7 +15,6 @@ public class KeyboardModifierComponent implements ITooltipComponent {
 
     protected EnumSet<TooltipModifier> supportedModifiers;
     protected TooltipModifier activeModifier;
-    protected double scaleFactor;
     protected String text = "";
     protected int width = 0;
     protected int height = 0;
@@ -42,12 +39,9 @@ public class KeyboardModifierComponent implements ITooltipComponent {
             }
         }
 
-        final int tooltipScale = ClientUtil.getTooltipScale();
-
         this.text = this.text.trim();
-        this.scaleFactor = Math.ceil(tooltipScale / 2f) / tooltipScale;
-        this.height = (int) ((TooltipFontContext.getFontRenderer().FONT_HEIGHT - 1) * this.scaleFactor);
-        this.width = (int) (TooltipFontContext.getStringWidth(this.text) * this.scaleFactor);
+        this.height = TooltipFontContext.getFontRenderer().FONT_HEIGHT;
+        this.width = TooltipFontContext.getStringWidth(this.text);
     }
 
     @Override
@@ -57,7 +51,7 @@ public class KeyboardModifierComponent implements ITooltipComponent {
 
     @Override
     public int getHeight() {
-        return this.height;
+        return this.supportedModifiers.isEmpty() ? 0 : this.height;
     }
 
     @Override
@@ -73,13 +67,7 @@ public class KeyboardModifierComponent implements ITooltipComponent {
 
     @Override
     public void draw(int x, int y, int availableWidth, TooltipContext context) {
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScaled(this.scaleFactor, this.scaleFactor, 1);
-
-        TooltipFontContext.drawString(this.text, 0, 0);
-
-        GL11.glScaled(1d / this.scaleFactor, 1d / this.scaleFactor, 1);
-        GL11.glTranslatef(-x, -y, 0);
+        TooltipFontContext.drawString(this.text, x, y);
     }
 
     @Override

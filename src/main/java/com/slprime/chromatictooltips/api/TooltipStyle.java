@@ -1,5 +1,7 @@
 package com.slprime.chromatictooltips.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import com.google.gson.JsonArray;
@@ -132,16 +134,18 @@ public class TooltipStyle {
 
         if (containsKey("decorators")) {
             final JsonArray decoratorsStyle = getAsJsonArray("decorators", new JsonArray());
-            final TooltipDecorator[] decorators = new TooltipDecorator[decoratorsStyle.size()];
+            final List<TooltipDecorator> decorators = new ArrayList<>();
 
-            for (int i = 0; i < decoratorsStyle.size(); i++) {
-                decorators[i] = new TooltipDecorator(
-                    new TooltipStyle(
-                        decoratorsStyle.get(i)
-                            .getAsJsonObject()));
+            for (JsonElement element : decoratorsStyle) {
+
+                if (element == null || !element.isJsonObject()) {
+                    continue;
+                }
+
+                decorators.add(new TooltipDecorator(new TooltipStyle(element.getAsJsonObject())));
             }
 
-            return new TooltipDecoratorCollection(decorators);
+            return new TooltipDecoratorCollection(decorators.toArray(new TooltipDecorator[0]));
         } else if (containsKey("decorator")) {
             return new TooltipDecoratorCollection(
                 new TooltipDecorator[] { new TooltipDecorator(getAsStyle("decorator")) });

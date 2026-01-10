@@ -103,7 +103,7 @@ public class SectionComponent extends SectionBox {
         }
 
         for (ITooltipComponent component : this.components) {
-            final int remainingHeight = maxHeight - currentHeight - componentSpacing;
+            final int remainingHeight = maxHeight - currentHeight;
 
             if (secondPage.isEmpty() && component instanceof SpaceComponent) {
                 componentSpacing = 0;
@@ -112,8 +112,9 @@ public class SectionComponent extends SectionBox {
                 }
             }
 
-            if (secondPage.isEmpty() && (remainingHeight > 0 || firstPage.isEmpty())) {
-                final ITooltipComponent[] split = component.paginate(context, maxWidth, remainingHeight);
+            if (secondPage.isEmpty() && (remainingHeight > componentSpacing || firstPage.isEmpty())) {
+                final ITooltipComponent[] split = component
+                    .paginate(context, maxWidth, remainingHeight - componentSpacing);
                 final ITooltipComponent firstComponent = split[0];
                 final int compHeight = firstComponent.getHeight();
 

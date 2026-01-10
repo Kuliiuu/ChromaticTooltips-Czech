@@ -121,9 +121,8 @@ public class TooltipHandler {
     }
 
     public static String getComponentId(ITooltipComponent component) {
-        TooltipHandler.tipLineComponents
-            .put(component, TooltipHandler.COMPONENT_PREFIX + TooltipHandler.nextComponentId++);
-        return TooltipHandler.tipLineComponents.get(component);
+        return TooltipHandler.tipLineComponents
+            .computeIfAbsent(component, k -> TooltipHandler.COMPONENT_PREFIX + (TooltipHandler.nextComponentId++));
     }
 
     public static ITooltipComponent getTooltipComponent(String line) {
@@ -232,6 +231,7 @@ public class TooltipHandler {
             TooltipHandler.lastContext.clear();
             TooltipHandler.lastContext.setStack(request.stack);
             TooltipHandler.lastContext.setPosition(mouse);
+            TooltipHandler.lastContext.setContextTooltip(request.tooltip);
 
             TooltipHandler.lastHashCode = currentHash;
             TooltipHandler.lastTextLines = request.tooltip;

@@ -64,7 +64,9 @@ public class ItemInfoEnricher implements ITooltipEnricher {
             ForgeEventFactory.onItemTooltip(stack, mc.thePlayer, namelist, mc.gameSettings.advancedItemTooltips);
         } catch (Exception e) {}
 
-        namelist.remove(0); // remove temporary name added for information gathering
+        if (!namelist.isEmpty()) {
+            namelist.remove(0); // remove temporary name added for information gathering
+        }
 
         return namelist;
     }

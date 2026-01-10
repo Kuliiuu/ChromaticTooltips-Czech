@@ -10,7 +10,6 @@ import com.slprime.chromatictooltips.api.ITooltipEnricher;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
-import com.slprime.chromatictooltips.component.TextComponent;
 
 public class ContextInfoEnricher implements ITooltipEnricher {
 
@@ -33,7 +32,7 @@ public class ContextInfoEnricher implements ITooltipEnricher {
     public TooltipLines build(TooltipContext context) {
         final List<ITooltipComponent> lines = new ArrayList<>(context.getContextTooltip());
 
-        if (context.getStack() == null && !lines.isEmpty() && lines.get(0) instanceof TextComponent) {
+        if (context.getStack() == null && !lines.isEmpty()) {
             lines.remove(0);
         }
 

@@ -6,8 +6,8 @@ chromatictooltips.navigation.page=§8Page: %s / %s [Press %s for next, %s for pr
 chromatictooltips.navigation.page.next_only=§8Page: %s / %s [Press %s for next]
 chromatictooltips.navigation.page.previous_only=§8Page: %s / %s [Press %s for prev]
 
-chromatictooltips.enricher.stacksize.item=§8Count: %s
-chromatictooltips.enricher.stacksize.fluid=§8Amount: %s
+chromatictooltips.enricher.stacksize.item=§8Count: §7%s
+chromatictooltips.enricher.stacksize.fluid=§8Amount: §7%s
 
 chromatictooltips.enricher.modinfo.modname=§5%s
 chromatictooltips.enricher.modinfo.identifier=§5%s:§8%s
@@ -18,28 +18,31 @@ chromatictooltips.enricher.hotkeys.keybind.keys=§8 / §6
 chromatictooltips.enricher.oreDictionary.title=§7Ore Dictionary Names:
 chromatictooltips.enricher.oreDictionary.entry=§8 - §e%s
 
-chromatictooltips.enricher.attributes.durability.text=§7Durability: %s / %s
+chromatictooltips.enricher.attributes.addition.text.plus=§9+%s %s
+chromatictooltips.enricher.attributes.addition.text.minus=§9-%s %s
+chromatictooltips.enricher.attributes.addition.icon.plus=%s
+chromatictooltips.enricher.attributes.addition.icon.minus=§c-%s
+
+chromatictooltips.enricher.attributes.percent.text.plus=§9+%s%% %s
+chromatictooltips.enricher.attributes.percent.text.minus=§9-%s%% %s
+chromatictooltips.enricher.attributes.percent.icon.plus=%s%%
+chromatictooltips.enricher.attributes.percent.icon.minus=§c-%s%%
+
+chromatictooltips.enricher.attributes.durability.text=§9Durability: %s / %s
 chromatictooltips.enricher.attributes.durability.icon=%s§7 / %s
 
-chromatictooltips.enricher.attributes.fuel.text=Burn Time: %s
+chromatictooltips.enricher.attributes.fuel.text=§9Burn Time: %s
 chromatictooltips.enricher.attributes.fuel.icon=%s
 
-chromatictooltips.enricher.attributes.armor.text=§7Protection: %s
+chromatictooltips.enricher.attributes.armor.text=§9Protection: %s
 chromatictooltips.enricher.attributes.armor.icon=%s
 
-chromatictooltips.enricher.keyboard-modifier.shift.inactive=§8[SHIFT]§r
-chromatictooltips.enricher.keyboard-modifier.shift.active=§6[SHIFT]§r
-chromatictooltips.enricher.keyboard-modifier.ctrl.inactive=§8[CTRL]§r
-chromatictooltips.enricher.keyboard-modifier.ctrl.active=§6[CTRL]§r
-chromatictooltips.enricher.keyboard-modifier.alt.inactive=§8[ALT]§r
-chromatictooltips.enricher.keyboard-modifier.alt.active=§6[ALT]§r
-
-chromatictooltips.enricher.attributes.plus.0=%d
-chromatictooltips.enricher.attributes.plus.1=+%d%%
-chromatictooltips.enricher.attributes.plus.2=+%d%%
-chromatictooltips.enricher.attributes.take.0=-%d
-chromatictooltips.enricher.attributes.take.1=-%d%%
-chromatictooltips.enricher.attributes.take.2=-%d%%
+chromatictooltips.enricher.keyboard-modifier.shift.inactive=§8[shift]§r
+chromatictooltips.enricher.keyboard-modifier.shift.active=§6[shift]§r
+chromatictooltips.enricher.keyboard-modifier.ctrl.inactive=§8[ctrl]§r
+chromatictooltips.enricher.keyboard-modifier.ctrl.active=§6[ctrl]§r
+chromatictooltips.enricher.keyboard-modifier.alt.inactive=§8[alt]§r
+chromatictooltips.enricher.keyboard-modifier.alt.active=§6[alt]§r
 
 nei.options.inventory.hotkeysHelpText=Show Hotkeys Help Text
 nei.options.inventory.hotkeysHelpText.true=Yes

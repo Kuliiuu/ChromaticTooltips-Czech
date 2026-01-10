@@ -3,7 +3,6 @@ package com.slprime.chromatictooltips.enricher;
 import java.util.EnumSet;
 
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidContainerRegistry;
@@ -44,11 +43,18 @@ public class StackSizeEnricher implements ITooltipEnricher {
             return null;
         }
 
-        final long stackSize = EnricherConfig.includePlayerInventoryEnabled ? getStackSize(context) : stack.stackSize;
+        final long stackSize = EnricherConfig.includeContainerInventoryEnabled ? getStackSize(context)
+            : stack.stackSize;
         final StackSizeEnricherEvent event = new StackSizeEnricherEvent(context, getFluid(stack), stackSize);
         ClientUtil.postEvent(event);
 
         if (event.stackSize <= 0 || event.fluid != null && event.fluid.amount <= 0) {
+            return null;
+        }
+
+        if (event.fluid == null && stackSize <= stack.getMaxStackSize()
+            && stackSize == stack.stackSize
+            && EnricherConfig.showOnlyWhenOverStackSizeEnabled) {
             return null;
         }
 
@@ -65,14 +71,15 @@ public class StackSizeEnricher implements ITooltipEnricher {
 
         if (guiContainer != null) {
             final Slot slot = guiContainer.getSlotAtPosition(context.getMouseX(), context.getMouseY());
-            final InventoryPlayer playerInventory = ClientUtil.getPlayerInventory();
-            if (slot != null && slot.getHasStack() && slot.inventory == playerInventory) {
+
+            if (slot != null && slot.getHasStack()) {
                 long stackSize = 0;
 
-                for (ItemStack invStack : playerInventory.mainInventory) {
-                    if (invStack != null && stack.isItemEqual(invStack)
-                        && ItemStack.areItemStackTagsEqual(stack, invStack)) {
-                        stackSize += invStack.stackSize;
+                for (Slot currentSlot : guiContainer.inventorySlots.inventorySlots) {
+                    if (slot.inventory == currentSlot.inventory && currentSlot.getHasStack()
+                        && stack.isItemEqual(currentSlot.getStack())
+                        && ItemStack.areItemStackTagsEqual(stack, currentSlot.getStack())) {
+                        stackSize += currentSlot.getStack().stackSize;
                     }
                 }
 
