@@ -62,7 +62,7 @@ A tooltip style for items with rare rarity:
             "margin": 1
         }]
     }, {
-        "type": "item",
+        "context": "item",
         "filter": "rarity:rare",
 
         "margin": 2,
@@ -111,7 +111,7 @@ A tooltip style for items with rare rarity:
 {
   "styles": [
     {
-      "type": "item | default | <custom>",
+      "context": "item | default | <custom>",
       "filter": "...",
 
       "offsetMain": "<int>",
@@ -134,7 +134,7 @@ or `style` if you don't have multiple tooltips
 ```json
 {
     "style": {
-        "type": "item | default | <custom>",
+        "context": "item | default | <custom>",
         "filter": "...",
 
         "offsetMain": "<int>",
@@ -321,7 +321,7 @@ Rectangular background with customizable color.
 
 ```json
 {
-  "type": "rectangle",
+  "type": "background",
   "color": "0x80202020"
 }
 ```

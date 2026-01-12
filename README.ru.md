@@ -56,7 +56,7 @@ Chromatic Tooltips позволяет:
             "margin": 1
         }]
     }, {
-        "type": "item",
+        "context": "item",
         "filter": "rarity:rare",
 
         "margin": 2,
@@ -103,7 +103,7 @@ Chromatic Tooltips позволяет:
 {
   "styles": [
     {
-      "type": "item | default | <custom>",
+      "context": "item | default | <custom>",
       "filter": "...",
 
       "offsetMain": "<int>",
@@ -126,7 +126,7 @@ Chromatic Tooltips позволяет:
 ```json
 {
     "style": {
-        "type": "item | default | <custom>",
+        "context": "item | default | <custom>",
         "filter": "...",
 
         "offsetMain": "<int>",
@@ -313,7 +313,7 @@ example: minecraft:potion 16384-16462,!16386 | $oreiron | tag.color=red
 
 ```json
 {
-  "type": "rectangle",
+  "type": "background",
   "color": "0x80202020"
 }
 ```
