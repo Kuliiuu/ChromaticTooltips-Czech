@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.oredict.OreDictionary;
 
 import com.slprime.chromatictooltips.api.EnricherPlace;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
@@ -195,7 +196,11 @@ public class TooltipHandler {
         // change in item stack invalidates cache
         if (TooltipHandler.lastContext != null
             && !areItemStackEqual(request.stack, TooltipHandler.lastContext.getStack())) {
-            clearCache();
+            if (areStacksSameType(request.stack, TooltipHandler.lastContext.getStack())) {
+                updateContent = true;
+            } else {
+                clearCache();
+            }
         }
 
         // change in stack size may update content
@@ -254,6 +259,17 @@ public class TooltipHandler {
 
         return (stackA.stackTagCompound == null || stackA.stackTagCompound.hasNoTags())
             && (stackB.stackTagCompound == null || stackB.stackTagCompound.hasNoTags());
+    }
+
+    protected static boolean areStacksSameType(ItemStack stackA, ItemStack stackB) {
+        if (stackA == null && stackB == null) return true;
+        if (stackA == null || stackB == null) return false;
+
+        return stackA.getItem() == stackB.getItem() && (stackA.getItemDamage() == stackB.getItemDamage()
+            || stackA.getItemDamage() == OreDictionary.WILDCARD_VALUE
+            || stackB.getItemDamage() == OreDictionary.WILDCARD_VALUE
+            || stackA.getItem()
+                .isDamageable());
     }
 
     protected static void clearCache() {

@@ -50,7 +50,8 @@ public class ItemInfoEnricher implements ITooltipEnricher {
     protected List<String> itemInformation(ItemStack stack) {
         final Minecraft mc = ClientUtil.mc();
         final List<String> namelist = new ArrayList<>();
-        namelist.add(stack.getDisplayName()); // same mods expecting the first line to be the item name
+        final String displayName = stack.getDisplayName();
+        namelist.add(displayName); // temporary name added for information gathering
 
         try {
             stack.getItem()
@@ -64,8 +65,9 @@ public class ItemInfoEnricher implements ITooltipEnricher {
             ForgeEventFactory.onItemTooltip(stack, mc.thePlayer, namelist, mc.gameSettings.advancedItemTooltips);
         } catch (Exception e) {}
 
-        if (!namelist.isEmpty()) {
-            namelist.remove(0); // remove temporary name added for information gathering
+        if (!namelist.isEmpty() && namelist.get(0)
+            .contains(displayName)) {
+            namelist.remove(0); // remove temporary name
         }
 
         return namelist;
