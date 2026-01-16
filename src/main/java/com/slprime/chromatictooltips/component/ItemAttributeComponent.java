@@ -49,7 +49,7 @@ public class ItemAttributeComponent implements ITooltipComponent {
     @Override
     public void draw(int x, int y, int availableWidth, TooltipContext context) {
         drawIcon(x, y - 16f / 20f);
-        context.drawString(this.title, x + this.marginLeft, y);
+        TooltipFontContext.drawString(this.title, x + this.marginLeft, y);
     }
 
     private void drawIcon(double x, double y) {

@@ -89,7 +89,7 @@ public class TextComponent implements ITooltipComponent {
         final int lineHeight = TooltipFontContext.getFontHeight();
 
         for (String line : this.textLines) {
-            context.drawString(line, x, y);
+            TooltipFontContext.drawString(line, x, y);
             y += lineHeight;
         }
 

@@ -1,7 +1,6 @@
 package com.slprime.chromatictooltips;
 
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -211,7 +210,8 @@ public class TooltipHandler {
         }
 
         // change in text lines may update context
-        if (!updateContent && !request.tooltip.equals(TooltipHandler.lastTextLines)) {
+        if (!updateContent && TooltipHandler.lastContext != null
+            && !request.tooltip.equals(TooltipHandler.lastTextLines)) {
             if (request.stack != null
                 || TooltipHandler.lastContext != null && Math.abs(TooltipHandler.lastContext.getMouseX() - mouse.x) < 3
                     && Math.abs(TooltipHandler.lastContext.getMouseY() - mouse.y) < 3) {
@@ -222,18 +222,12 @@ public class TooltipHandler {
         }
 
         if (TooltipHandler.lastContext == null) {
-            TooltipHandler.lastContext = new TooltipContext(request, getRendererFor(request.context, request.stack));
-            TooltipHandler.lastContext.setPosition(mouse);
-
-            if (EnricherConfig.keyboardModifiersEnabled) {
-                updateSupportedModifiers(TooltipHandler.lastContext);
-            }
-
-            updateContent = true;
-        }
-
-        if (updateContent || TooltipHandler.lastHashCode != currentHash) {
+            TooltipHandler.lastContext = TooltipHandler.getTooltipContext(request);
+            TooltipHandler.lastHashCode = currentHash;
+            TooltipHandler.lastTextLines = request.tooltip;
+        } else if (updateContent || TooltipHandler.lastHashCode != currentHash) {
             TooltipHandler.lastContext.clear();
+
             TooltipHandler.lastContext.setStack(request.stack);
             TooltipHandler.lastContext.setPosition(mouse);
             TooltipHandler.lastContext.setContextTooltip(request.tooltip);
@@ -246,6 +240,19 @@ public class TooltipHandler {
         }
 
         TooltipHandler.ignoreLastTooltip = false;
+    }
+
+    public static TooltipContext getTooltipContext(TooltipRequest request) {
+        final ITooltipRenderer renderer = getRendererFor(request.context, request.stack);
+        final TooltipContext context = new TooltipContext(request, renderer);
+        context.setPosition(request.mouse != null ? request.mouse : ClientUtil.getMousePosition());
+
+        if (EnricherConfig.keyboardModifiersEnabled) {
+            updateSupportedModifiers(context);
+        }
+
+        enrichTooltip(context);
+        return context;
     }
 
     protected static boolean areItemStackEqual(ItemStack stackA, ItemStack stackB) {
@@ -425,22 +432,11 @@ public class TooltipHandler {
         return TooltipHandler.lastContext;
     }
 
-    public static Rectangle getLastTooltipBounds() {
-
-        if (TooltipHandler.lastContext != null) {
-            return TooltipHandler.lastContext.getRenderer()
-                .getTooltipBounds(TooltipHandler.lastContext);
-        }
-
-        return null;
-    }
-
     public static void drawLastTooltip() {
 
         if (TooltipHandler.lastContext != null && !TooltipHandler.lastContext.isEmpty()
             && !TooltipHandler.ignoreLastTooltip) {
-            TooltipHandler.lastContext.getRenderer()
-                .draw(TooltipHandler.lastContext);
+            TooltipHandler.lastContext.draw();
             TooltipHandler.ignoreLastTooltip = true;
         } else if (TooltipHandler.lastContext != null && TooltipHandler.ignoreLastTooltip) {
             TooltipHandler.clearCache();
@@ -451,8 +447,7 @@ public class TooltipHandler {
     public static boolean nextTooltipPage() {
 
         if (TooltipHandler.lastContext != null) {
-            return TooltipHandler.lastContext.getRenderer()
-                .nextTooltipPage();
+            return TooltipHandler.lastContext.nextTooltipPage();
         }
 
         return false;
@@ -461,8 +456,7 @@ public class TooltipHandler {
     public static boolean previousTooltipPage() {
 
         if (TooltipHandler.lastContext != null) {
-            return TooltipHandler.lastContext.getRenderer()
-                .previousTooltipPage();
+            return TooltipHandler.lastContext.previousTooltipPage();
         }
 
         return false;

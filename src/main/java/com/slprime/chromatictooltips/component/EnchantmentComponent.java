@@ -97,11 +97,11 @@ public class EnchantmentComponent implements ITooltipComponent {
             x += this.marginLeft;
         }
 
-        context.drawString(this.title, x, y);
+        TooltipFontContext.drawString(this.title, x, y);
         y += lineHeight;
 
         for (String line : this.hint) {
-            context.drawString(line, x, y);
+            TooltipFontContext.drawString(line, x, y);
             y += lineHeight;
         }
     }

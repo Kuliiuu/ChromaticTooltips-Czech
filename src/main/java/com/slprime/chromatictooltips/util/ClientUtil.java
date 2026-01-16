@@ -131,6 +131,12 @@ public class ClientUtil {
         return new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
     }
 
+    @Deprecated
+    public static float getTooltipScaleShift() {
+        final float scaleFactor = getScaledResolution().getScaleFactor();
+        return Math.max(1, scaleFactor + GeneralConfig.scaleFactor) / scaleFactor;
+    }
+
     public static int getTooltipScale() {
         return Math.max(1, getScaledResolution().getScaleFactor() + GeneralConfig.scaleFactor);
     }

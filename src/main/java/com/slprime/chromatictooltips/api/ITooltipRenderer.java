@@ -1,10 +1,11 @@
 package com.slprime.chromatictooltips.api;
 
-import java.awt.Rectangle;
 import java.util.EnumSet;
+import java.util.List;
 
 import net.minecraft.item.ItemStack;
 
+import com.slprime.chromatictooltips.component.SectionComponent;
 import com.slprime.chromatictooltips.component.SpaceComponent;
 import com.slprime.chromatictooltips.util.SectionBox;
 
@@ -13,6 +14,10 @@ public interface ITooltipRenderer {
     public static final int DEFAULT_Z_INDEX = 300;
 
     public TooltipStyle getStyle();
+
+    public int getMainAxisOffset();
+
+    public int getCrossAxisOffset();
 
     public SectionBox getSectionBox(String path);
 
@@ -24,11 +29,7 @@ public interface ITooltipRenderer {
 
     public boolean matches(ItemStack stack);
 
-    public boolean nextTooltipPage();
+    public List<SectionComponent> paginateTooltip(TooltipContext context);
 
-    public boolean previousTooltipPage();
-
-    public Rectangle getTooltipBounds(TooltipContext context);
-
-    public void draw(TooltipContext context);
+    public void draw(TooltipContext context, int x, int y);
 }

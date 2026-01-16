@@ -89,7 +89,8 @@ public class DyncamicTextComponent implements ITooltipComponent {
         final List<String> lines = generateLines(this.maxWidth);
 
         for (int i = this.lineIndex; i < lines.size(); i++) {
-            context.drawString(ClientUtil.applyBaseColorIfAbsent(lines.get(i), TooltipLines.BASE_COLOR), x, y);
+            TooltipFontContext
+                .drawString(ClientUtil.applyBaseColorIfAbsent(lines.get(i), TooltipLines.BASE_COLOR), x, y);
             y += lineHeight;
         }
 

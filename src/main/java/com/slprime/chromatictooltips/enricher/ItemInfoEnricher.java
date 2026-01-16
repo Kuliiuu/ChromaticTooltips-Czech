@@ -17,6 +17,7 @@ import com.slprime.chromatictooltips.api.ITooltipEnricher;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
+import com.slprime.chromatictooltips.event.ItemInfoEnricherEvent;
 import com.slprime.chromatictooltips.util.ClientUtil;
 
 public class ItemInfoEnricher implements ITooltipEnricher {
@@ -44,7 +45,10 @@ public class ItemInfoEnricher implements ITooltipEnricher {
             return null;
         }
 
-        return new TooltipLines(itemInformation(stack.copy()));
+        final ItemInfoEnricherEvent event = new ItemInfoEnricherEvent(context, itemInformation(stack.copy()));
+        ClientUtil.postEvent(event);
+
+        return new TooltipLines(event.tooltip);
     }
 
     protected List<String> itemInformation(ItemStack stack) {

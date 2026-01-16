@@ -1,6 +1,6 @@
 package com.slprime.chromatictooltips;
 
-import java.awt.Point;
+import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,35 +39,6 @@ import com.slprime.chromatictooltips.util.TooltipSpacing;
 
 public class TooltipRenderer implements ITooltipRenderer {
 
-    protected static class TooltipSectionBox extends SectionBox {
-
-        protected int maxWidth = Integer.MAX_VALUE;
-        protected SectionBox navigationBox = null;
-
-        public TooltipSectionBox(TooltipStyle style) {
-            super(style);
-
-            this.maxWidth = style.getAsInt("maxWidth", this.maxWidth);
-            this.navigationBox = new SectionBox(style.getAsStyle("navigation"));
-        }
-
-        public TooltipSectionBox(TooltipSectionBox box) {
-            super(box);
-
-            this.maxWidth = box.maxWidth;
-            this.navigationBox = box.navigationBox;
-        }
-
-        public int getMaxWidth() {
-            return GeneralConfig.maxWidth == 0 ? this.maxWidth : Math.max(50, GeneralConfig.maxWidth);
-        }
-
-        public int getNavigationHeight() {
-            return this.navigationBox.getBlock() + TooltipFontContext.getFontHeight()
-                - TooltipFontContext.DEFAULT_SPACING;
-        }
-    }
-
     protected Map<String, SectionBox> sectionBoxCache = new HashMap<>();
     protected Map<String, SpaceComponent> spacingCache = new HashMap<>();
     protected Map<String, EnumSet<TooltipModifier>> tooltipModifierCache = new HashMap<>();
@@ -75,24 +46,18 @@ public class TooltipRenderer implements ITooltipRenderer {
 
     protected int mainAxisOffset = 6;
     protected int crossAxisOffset = -18;
-    protected TooltipSectionBox tooltipSectionBox;
-
-    protected TooltipContext lastContext = null;
-    protected int lastRevision = 0;
-
-    protected SectionComponent pagedTooltipComponent = null;
-    protected int currentPage = 0;
-    protected int totalPages = 0;
-    protected Rectangle anchorBounds = new Rectangle(0, 0, 0, 0);
-    protected Point lastPosition = null;
-    protected float tooltipScaleFactor = 0;
+    protected int maxWidth = Integer.MAX_VALUE;
+    protected SectionBox navigationBox = null;
+    protected SectionBox tooltipBox;
 
     protected Predicate<ItemStack> filter;
     protected TooltipStyle tooltipStyle;
 
     public TooltipRenderer(TooltipStyle style) {
         this.filter = ItemStackFilterParser.parse(style.getAsString("filter", ""));
-        this.tooltipSectionBox = new TooltipSectionBox(style);
+        this.maxWidth = style.getAsInt("maxWidth", this.maxWidth);
+        this.navigationBox = new SectionBox(style.getAsStyle("navigation"));
+        this.tooltipBox = new SectionBox(style);
         this.tooltipStyle = style;
 
         if (!style.containsKey("divider")) {
@@ -110,9 +75,20 @@ public class TooltipRenderer implements ITooltipRenderer {
         generateEnricherCaches();
     }
 
+    @Override
+    public int getMainAxisOffset() {
+        return this.mainAxisOffset;
+    }
+
+    @Override
+    public int getCrossAxisOffset() {
+        return this.crossAxisOffset;
+    }
+
     protected JsonObject createDefaultDivider() {
         final JsonObject dividerStyle = new JsonObject();
         final JsonObject decorator = new JsonObject();
+
         decorator.addProperty("type", "background");
         decorator.addProperty("color", "0xFFFFFFFF");
         decorator.addProperty("alignBlock", "center");
@@ -188,30 +164,6 @@ public class TooltipRenderer implements ITooltipRenderer {
         return this.spacingCache.computeIfAbsent(path, p -> new SpaceComponent(this.tooltipStyle.getAsStyle(p)));
     }
 
-    @Override
-    public boolean nextTooltipPage() {
-
-        if (this.lastContext != null
-            && this.currentPage != (this.currentPage = (this.currentPage + 1) % this.totalPages)) {
-            this.lastPosition = null;
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean previousTooltipPage() {
-
-        if (this.lastContext != null
-            && this.currentPage != (this.currentPage = (this.currentPage - 1 + this.totalPages) % this.totalPages)) {
-            this.lastPosition = null;
-            return true;
-        }
-
-        return false;
-    }
-
     protected List<ITooltipComponent> prepareComponents(List<SectionComponent> components) {
         final List<ITooltipComponent> result = new ArrayList<>(components);
 
@@ -222,14 +174,17 @@ public class TooltipRenderer implements ITooltipRenderer {
         return result;
     }
 
-    protected List<SectionComponent> paginateComponents(SectionComponent component, int maxWidth, int maxHeight) {
-        maxWidth = Math
-            .max(Math.min(this.tooltipSectionBox.getMaxWidth(), maxWidth), this.tooltipSectionBox.getMinWidth());
-        maxHeight = Math.max(maxHeight, this.tooltipSectionBox.getMinHeight());
+    protected List<SectionComponent> paginateComponents(TooltipContext context, SectionComponent component,
+        int maxWidth, int maxHeight) {
+        maxWidth = Math.max(
+            Math.min(GeneralConfig.maxWidth == 0 ? this.maxWidth : Math.max(50, GeneralConfig.maxWidth), maxWidth),
+            this.tooltipBox.getMinWidth());
+        maxHeight = Math.max(maxHeight, this.tooltipBox.getMinHeight());
 
         final List<SectionComponent> pages = new ArrayList<>();
-        final int paginationHeight = this.tooltipSectionBox.getNavigationHeight();
-        ITooltipComponent[] split = component.paginate(this.lastContext, maxWidth, maxHeight);
+        final int paginationHeight = this.navigationBox.getBlock() + TooltipFontContext.getFontHeight()
+            - TooltipFontContext.DEFAULT_SPACING;
+        ITooltipComponent[] split = component.paginate(context, maxWidth, maxHeight);
         final SectionComponent firstPage = (SectionComponent) split[0];
 
         if (split.length == 1) {
@@ -239,7 +194,7 @@ public class TooltipRenderer implements ITooltipRenderer {
         maxHeight = Math.max(0, maxHeight - paginationHeight);
 
         while (component != null) {
-            split = component.paginate(this.lastContext, maxWidth, maxHeight);
+            split = component.paginate(context, maxWidth, maxHeight);
             pages.add((SectionComponent) split[0]);
 
             if (split.length > 1) {
@@ -273,122 +228,78 @@ public class TooltipRenderer implements ITooltipRenderer {
             component.addComponent(
                 new SectionComponent(
                     "navigation",
-                    this.tooltipSectionBox.navigationBox,
+                    this.navigationBox,
                     Collections.singletonList(new TextComponent(text))));
         }
     }
 
     @Override
-    public Rectangle getTooltipBounds(TooltipContext context) {
+    public List<SectionComponent> paginateTooltip(TooltipContext context) {
+        final SectionComponent section = new SectionComponent(
+            "page",
+            this.tooltipBox,
+            prepareComponents(context.getSections()));
 
-        if (this.pagedTooltipComponent == null || this.lastPosition == null || context != this.lastContext) {
-            return null;
+        final int scaleFactor = context.getScaleFactor();
+        final Dimension freeSpace = getFreeSpace(scaleFactor);
+        final List<SectionComponent> pagedComponents = paginateComponents(
+            context,
+            section,
+            freeSpace.width,
+            freeSpace.height);
+
+        if (pagedComponents.size() > 1) {
+            for (int i = 0; i < pagedComponents.size(); i++) {
+                addNavigation(pagedComponents.get(i), i + 1, pagedComponents.size());
+            }
         }
 
-        return new Rectangle(
-            this.lastPosition.x,
-            this.lastPosition.y,
-            this.pagedTooltipComponent.getWidth(),
-            this.pagedTooltipComponent.getHeight());
+        return pagedComponents;
+    }
+
+    protected Dimension getFreeSpace(int scaleFactor) {
+        final Minecraft mc = ClientUtil.mc();
+        return new Dimension(
+            (int) Math.ceil(mc.displayWidth / (float) scaleFactor),
+            (int) Math.ceil(mc.displayHeight / (float) scaleFactor));
     }
 
     @Override
-    public void draw(TooltipContext context) {
+    public void draw(TooltipContext context, int x, int y) {
+        final SectionComponent section = context.getActivePageComponent();
 
-        if (context != this.lastContext) {
-            this.lastContext = context;
-            this.lastPosition = null;
-            this.currentPage = 0;
-        }
-
-        if (this.lastContext == null || this.lastContext.isEmpty()) {
-            return;
-        }
-
-        if (this.lastPosition == null || this.lastRevision != this.lastContext.getRevision()) {
-            final Minecraft mc = ClientUtil.mc();
-            final float tooltipScale = ClientUtil.getTooltipScale();
-            final int scaledWidth = (int) Math.ceil(mc.displayWidth / tooltipScale);
-            final int scaledHeight = (int) Math.ceil(mc.displayHeight / tooltipScale);
-            final List<SectionComponent> pages = paginateComponents(
-                new SectionComponent("page", this.tooltipSectionBox, prepareComponents(this.lastContext.getSections())),
-                scaledWidth,
-                scaledHeight);
-
-            this.lastPosition = null;
-            this.totalPages = pages.size();
-            this.lastRevision = this.lastContext.getRevision();
-            this.currentPage = Math.max(0, Math.min(this.currentPage, this.totalPages - 1));
-            this.pagedTooltipComponent = pages.get(this.currentPage);
-            this.tooltipScaleFactor = tooltipScale / ClientUtil.getScaledResolution()
+        if (section != null && !section.isEmpty()) {
+            final TooltipSpacing margin = section.getMargin();
+            final int width = section.getWidth() - margin.getInline();
+            final int height = section.getHeight() - margin.getBlock();
+            final float scaleShift = (float) context.getScaleFactor() / ClientUtil.getScaledResolution()
                 .getScaleFactor();
-
-            if (this.totalPages > 1) {
-                addNavigation(this.pagedTooltipComponent, this.currentPage + 1, this.totalPages);
-            }
-
-        }
-
-        if (this.lastPosition == null || !this.anchorBounds.equals(this.lastContext.getAnchorBounds())) {
-            final Minecraft mc = ClientUtil.mc();
-            final float tooltipScale = ClientUtil.getTooltipScale();
-            final int scaledWidth = (int) Math.ceil(mc.displayWidth / tooltipScale);
-            final int scaledHeight = (int) Math.ceil(mc.displayHeight / tooltipScale);
-
-            this.anchorBounds.setBounds(this.lastContext.getAnchorBounds());
-            this.lastPosition = prepareTooltipPosition(
-                this.pagedTooltipComponent.getWidth(),
-                this.pagedTooltipComponent.getHeight(),
-                scaleAnchorBounds(this.lastContext.getAnchorBounds(), this.tooltipScaleFactor),
-                scaledWidth,
-                scaledHeight);
-        }
-
-        if (!this.pagedTooltipComponent.isEmpty()) {
-            final TooltipSpacing margin = this.pagedTooltipComponent.getMargin();
-            final int width = this.pagedTooltipComponent.getWidth() - margin.getInline();
-            final int height = this.pagedTooltipComponent.getHeight() - margin.getBlock();
             final Rectangle tooltipRectangle = new Rectangle(
-                (int) ((this.lastPosition.x + margin.getLeft()) * this.tooltipScaleFactor),
-                (int) ((this.lastPosition.y + margin.getTop()) * this.tooltipScaleFactor),
-                (int) (width * this.tooltipScaleFactor),
-                (int) (height * this.tooltipScaleFactor));
+                x + (int) (margin.getLeft() * scaleShift),
+                y + (int) (margin.getTop() * scaleShift),
+                (int) (width * scaleShift),
+                (int) (height * scaleShift));
 
-            drawContent();
-
-            ClientUtil.postEvent(new RenderTooltipEvent(context, this.pagedTooltipComponent, tooltipRectangle));
+            drawContent(context, section, scaleShift, x, y);
+            ClientUtil.postEvent(new RenderTooltipEvent(context, section, tooltipRectangle));
         }
+
     }
 
-    protected Rectangle scaleAnchorBounds(Rectangle anchorBounds, float scaleFactor) {
-        return new Rectangle(
-            (int) Math.ceil(anchorBounds.x / scaleFactor),
-            (int) Math.ceil(anchorBounds.y / scaleFactor),
-            (int) Math.ceil(anchorBounds.width / scaleFactor),
-            (int) Math.ceil(anchorBounds.height / scaleFactor));
-    }
-
-    protected void drawContent() {
+    protected void drawContent(TooltipContext context, SectionComponent section, float scaleShift, int x, int y) {
         GL11.glPushMatrix();
         RenderHelper.disableStandardItemLighting();
         GL11.glDisable(GL12.GL_RESCALE_NORMAL);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         ClientUtil.incZLevel(DEFAULT_Z_INDEX);
 
-        if (this.tooltipScaleFactor != 1.0f) {
-            GL11.glTranslatef(
-                this.lastPosition.x * this.tooltipScaleFactor,
-                this.lastPosition.y * this.tooltipScaleFactor,
-                0);
-            GL11.glScalef(this.tooltipScaleFactor, this.tooltipScaleFactor, 1);
-            this.pagedTooltipComponent.draw(0, 0, this.pagedTooltipComponent.getWidth(), this.lastContext);
-            GL11.glScalef(1 / this.tooltipScaleFactor, 1 / this.tooltipScaleFactor, 1);
+        if (scaleShift != 1.0f) {
+            GL11.glTranslatef(x, y, 0);
+            GL11.glScalef(scaleShift, scaleShift, 1);
+            section.draw(0, 0, section.getWidth(), context);
+            GL11.glScalef(1 / scaleShift, 1 / scaleShift, 1);
         } else {
-            this.pagedTooltipComponent.draw(
-                this.lastPosition.x,
-                this.lastPosition.y,
-                this.pagedTooltipComponent.getWidth(),
-                this.lastContext);
+            section.draw(x, y, section.getWidth(), context);
         }
 
         ClientUtil.incZLevel(-DEFAULT_Z_INDEX);
@@ -396,51 +307,6 @@ public class TooltipRenderer implements ITooltipRenderer {
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
         RenderHelper.enableStandardItemLighting();
         GL11.glPopMatrix();
-    }
-
-    protected Point prepareTooltipPosition(int width, int height, Rectangle anchor, int scaledWidth, int scaledHeight) {
-        final int offsetMain = anchor.width == 0 && anchor.height == 0 ? this.mainAxisOffset : 0;
-        final int offsetCross = anchor.width == 0 && anchor.height == 0 ? this.crossAxisOffset : 0;
-        final Point rightPoint = new Point(anchor.x + anchor.width + offsetMain, anchor.y + offsetCross);
-        final Point leftPoint = new Point(anchor.x - width - offsetMain, anchor.y + offsetCross);
-        final Point topPoint = new Point(anchor.x + offsetCross, anchor.y - height - offsetMain);
-        final Point bottomPoint = new Point(anchor.x + offsetCross, anchor.y + anchor.height + offsetMain);
-
-        if (rightPoint.x + width <= scaledWidth) {
-            rightPoint.y = clamp(rightPoint.y, 0, scaledHeight - height);
-            return rightPoint;
-        }
-
-        if (leftPoint.x >= 0) {
-            leftPoint.y = clamp(leftPoint.y, 0, scaledHeight - height);
-            return leftPoint;
-        }
-
-        if (bottomPoint.y + height <= scaledHeight) {
-            bottomPoint.x = clamp(bottomPoint.x, 0, scaledWidth - width);
-            return bottomPoint;
-        }
-
-        if (topPoint.y >= 0) {
-            topPoint.x = clamp(topPoint.x, 0, scaledWidth - width);
-            return topPoint;
-        }
-
-        // more space on right side
-        if (anchor.x < scaledWidth - anchor.x - anchor.width) {
-            rightPoint.y = clamp(rightPoint.y, 0, scaledHeight - height);
-            rightPoint.x = clamp(rightPoint.x, 0, scaledWidth - width);
-            return rightPoint;
-        } else {
-            leftPoint.y = clamp(leftPoint.y, 0, scaledHeight - height);
-            leftPoint.x = clamp(leftPoint.x, 0, scaledWidth - width);
-            return leftPoint;
-        }
-
-    }
-
-    protected int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(value, max));
     }
 
 }
