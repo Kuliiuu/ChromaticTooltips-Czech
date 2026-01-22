@@ -849,14 +849,23 @@ Applies to tooltips that belong to an item. You can use all styles that `Section
 
 Triggers `ItemInfoEnricherEvent` through which other mods can add their lines to this section.
 
-### 8.7. contextInfo
+### 8.7. fluidInfo
+
+**Place:** BODY
+**Mode:** DEFAULT
+
+Applies to tooltips that belong to an fluid. You can use all styles that `SectionBox` accepts. Displays fluid tooltip.
+
+Triggers `FluidInfoEnricherEvent` through which other mods can add their lines to this section.
+
+### 8.8. contextInfo
 
 **Place:** BODY
 **Mode:** DEFAULT
 
 Applies to tooltips that belong to an item. You can use all styles that `SectionBox` accepts. Displays lines that were passed to the tooltip.
 
-### 8.8. modInfo
+### 8.9. modInfo
 
 **Place:** FOOTER
 **Mode:** ALWAYS

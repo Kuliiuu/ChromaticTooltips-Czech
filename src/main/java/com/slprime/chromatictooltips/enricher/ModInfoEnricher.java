@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidRegistry;
 
 import com.slprime.chromatictooltips.api.EnricherPlace;
 import com.slprime.chromatictooltips.api.ITooltipEnricher;
@@ -11,7 +12,8 @@ import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.config.EnricherConfig;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.event.ModInfoEnricherEvent;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
@@ -41,20 +43,36 @@ public class ModInfoEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
 
-        if (stack == null || !EnricherConfig.modInfoEnabled) {
+        if (!EnricherConfig.modInfoEnabled) {
             return null;
         }
 
         final TooltipLines components = new TooltipLines();
-        final UniqueIdentifier identifier = getIdentifier(stack);
-        final String modname = nameFromStack(identifier);
+        UniqueIdentifier identifier = UNKNOWN_IDENTIFIER;
 
-        if (ClientUtil.isCtrlKeyDown() && ClientUtil.mc().gameSettings.advancedItemTooltips) {
-            components.line(ClientUtil.translate("enricher.modinfo.identifier", identifier.modId, identifier.name));
+        if (context.getItemStack() != null) {
+            identifier = getIdentifier(context.getItemStack());
+        } else if (context.getFluidStack() != null) {
+            identifier = new UniqueIdentifier(
+                FluidRegistry.getDefaultFluidName(
+                    context.getFluidStack()
+                        .getFluid()));
         } else {
-            components.line(ClientUtil.translate("enricher.modinfo.modname", modname));
+            return null;
+        }
+
+        final ModInfoEnricherEvent event = new ModInfoEnricherEvent(
+            context,
+            nameFromIdentifier(identifier),
+            identifier.modId,
+            identifier.name);
+        TooltipUtils.postEvent(event);
+
+        if (TooltipUtils.isCtrlKeyDown() && TooltipUtils.mc().gameSettings.advancedItemTooltips) {
+            components.line(TooltipUtils.translate("enricher.modinfo.identifier", event.modId, event.itemId));
+        } else {
+            components.line(TooltipUtils.translate("enricher.modinfo.modname", event.modName));
         }
 
         return components;
@@ -65,7 +83,7 @@ public class ModInfoEnricher implements ITooltipEnricher {
         return identifier != null ? identifier : UNKNOWN_IDENTIFIER;
     }
 
-    protected static String nameFromStack(UniqueIdentifier identifier) {
+    protected static String nameFromIdentifier(UniqueIdentifier identifier) {
 
         if (namedMods == null) {
             namedMods = Loader.instance()

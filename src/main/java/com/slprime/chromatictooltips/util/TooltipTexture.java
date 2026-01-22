@@ -84,7 +84,7 @@ public class TooltipTexture {
         final String path = style.getAsString("path", "textures/tooltip.png");
         this.resourceLocation = new ResourceLocation(path.contains(":") ? path : ChromaticTooltips.MODID + ":" + path);
 
-        ClientUtil.bindTexture(this.resourceLocation);
+        TooltipUtils.bindTexture(this.resourceLocation);
         this.textureWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
         this.textureHeight = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
 
@@ -492,7 +492,7 @@ public class TooltipTexture {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glColor4f(mixColor >> 16 & 255, mixColor >> 8 & 255, mixColor & 255, mixColor >> 24 & 255);
-        ClientUtil.bindTexture(this.resourceLocation);
+        TooltipUtils.bindTexture(this.resourceLocation);
 
         if (this.calculatedInlineSizes == null || this.lastInlineWidth != width) {
 

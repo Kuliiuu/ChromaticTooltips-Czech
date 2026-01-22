@@ -23,7 +23,7 @@ import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.EnchantmentComponent;
 import com.slprime.chromatictooltips.config.EnricherConfig;
 import com.slprime.chromatictooltips.event.EnchantmentEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class EnchantmentEnricher implements ITooltipEnricher {
 
@@ -69,7 +69,7 @@ public class EnchantmentEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
+        final ItemStack stack = context.getItemStack();
 
         if (stack == null) {
             return null;
@@ -96,7 +96,7 @@ public class EnchantmentEnricher implements ITooltipEnricher {
         }
 
         final EnchantmentEnricherEvent event = new EnchantmentEnricherEvent(context, enchantmentList);
-        ClientUtil.postEvent(event);
+        TooltipUtils.postEvent(event);
 
         Collections.sort(
             event.enchantments,
@@ -121,7 +121,7 @@ public class EnchantmentEnricher implements ITooltipEnricher {
 
         return new EnchantmentComponent(
             "enchantments/" + icon + ".png",
-            ClientUtil
+            TooltipUtils
                 .applyBaseColorIfAbsent(enchantmentData.enchantment.getTranslatedName(enchantmentData.level), color),
             hint);
     }

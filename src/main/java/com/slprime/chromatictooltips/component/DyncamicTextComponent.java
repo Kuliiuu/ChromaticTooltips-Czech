@@ -9,8 +9,8 @@ import net.minecraft.util.EnumChatFormatting;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class DyncamicTextComponent implements ITooltipComponent {
 
@@ -90,7 +90,7 @@ public class DyncamicTextComponent implements ITooltipComponent {
 
         for (int i = this.lineIndex; i < lines.size(); i++) {
             TooltipFontContext
-                .drawString(ClientUtil.applyBaseColorIfAbsent(lines.get(i), TooltipLines.BASE_COLOR), x, y);
+                .drawString(TooltipUtils.applyBaseColorIfAbsent(lines.get(i), TooltipLines.BASE_COLOR), x, y);
             y += lineHeight;
         }
 

@@ -32,7 +32,7 @@ public class ContextInfoEnricher implements ITooltipEnricher {
     public TooltipLines build(TooltipContext context) {
         final List<ITooltipComponent> lines = new ArrayList<>(context.getContextTooltip());
 
-        if (context.getStack() == null && !lines.isEmpty()) {
+        if (context.getItemStack() == null && context.getFluidStack() == null && !lines.isEmpty()) {
             lines.remove(0);
         }
 

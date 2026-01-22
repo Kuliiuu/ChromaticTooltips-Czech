@@ -140,7 +140,7 @@ public class TooltipFontContext {
     public static FontRenderer getFontRenderer() {
 
         if (TooltipFontContext.fontRenderer == null) {
-            TooltipFontContext.fontRenderer = ClientUtil.mc().fontRenderer;
+            TooltipFontContext.fontRenderer = TooltipUtils.mc().fontRenderer;
         }
 
         return TooltipFontContext.fontRenderer;

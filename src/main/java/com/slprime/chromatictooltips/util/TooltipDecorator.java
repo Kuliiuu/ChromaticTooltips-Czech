@@ -5,11 +5,16 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IIcon;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import com.mitchej123.hodgepodge.textures.IPatchedTextureAtlasSprite;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipStyle;
 
@@ -163,11 +168,15 @@ public class TooltipDecorator {
         if (this.texture != null) {
             this.texture.draw(x, y, width, height, this.alignInline, this.alignBlock, mixColor);
         } else if (this.decoratorType == DecoratorType.ITEM) {
-            final ItemStack stack = context.getStack();
+            final ItemStack stack = context.getItemStack();
+            final FluidStack fluid = context.getFluidStack();
 
             if (stack != null) {
-                drawItemStack(x, y, width, height, stack);
+                drawItem(x, y, width, height, () -> drawItemStack(stack));
+            } else if (fluid != null) {
+                drawItem(x, y, width, height, () -> drawFluidStack(fluid));
             }
+
         } else if (this.decoratorType != DecoratorType.NONE) {
             drawGradient(x, y, width, height, mixColor);
         }
@@ -177,34 +186,57 @@ public class TooltipDecorator {
         }
     }
 
-    protected void drawItemStack(double x, double y, double w, double h, ItemStack stack) {
+    protected void drawItem(double x, double y, double w, double h, Runnable callback) {
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_LIGHTING_BIT);
         RenderHelper.enableGUIStandardItemLighting();
 
-        double xTranslation = x;
-        double yTranslation = y;
         double zTranslation = 400;
         double scale = Math.min(w / 16f, h / 16f);
 
-        GL11.glTranslated(xTranslation, yTranslation, zTranslation);
+        GL11.glTranslated(x, y, zTranslation);
         GL11.glScaled(scale, scale, 1);
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
         GL11.glEnable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
+        callback.run();
+
+        GL11.glScaled(1f / scale, 1f / scale, 1);
+        GL11.glTranslated(-x, -y, -zTranslation);
+        GL11.glPopAttrib();
+    }
+
+    protected void drawItemStack(ItemStack stack) {
         final FontRenderer font = TooltipFontContext.getFontRenderer();
-        final RenderItem itemRender = ClientUtil.getItemRenderer();
-        final TextureManager renderEngine = ClientUtil.mc()
+        final RenderItem itemRender = TooltipUtils.getItemRenderer();
+        final TextureManager renderEngine = TooltipUtils.mc()
             .getTextureManager();
 
         itemRender.zLevel += 100.0F;
         itemRender.renderItemAndEffectIntoGUI(font, renderEngine, stack, 0, 0);
-        itemRender.renderItemOverlayIntoGUI(font, renderEngine, stack, 0, 0, "");
         itemRender.zLevel -= 100.0F;
+    }
 
-        GL11.glScaled(1f / scale, 1f / scale, 1);
-        GL11.glTranslated(-xTranslation, -yTranslation, -zTranslation);
-        GL11.glPopAttrib();
+    protected void drawFluidStack(FluidStack stack) {
+        final Fluid fluid = stack.getFluid();
+        final IIcon fluidIcon = fluid.getIcon(stack);
+        final int fluidColor = fluid.getColor(stack);
+
+        if (fluidIcon == null) {
+            return;
+        }
+
+        if (TooltipUtils.isHodgepodgeLoaded && fluidIcon instanceof IPatchedTextureAtlasSprite patchedTexture) {
+            patchedTexture.markNeedsAnimationUpdate();
+        }
+
+        TooltipUtils.bindTexture(TextureMap.locationBlocksTexture);
+        GL11.glColor3f(
+            (fluidColor >> 16 & 255) / 255.0F,
+            (fluidColor >> 8 & 255) / 255.0F,
+            (fluidColor & 255) / 255.0F);
+        TooltipUtils.mc().currentScreen.drawTexturedModelRectFromIcon(0, 0, fluidIcon, 16, 16);
+        GL11.glColor3f(1f, 1f, 1f);
     }
 
     protected void drawGradient(double x, double y, double width, double height, int mixColor) {

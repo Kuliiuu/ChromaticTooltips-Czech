@@ -7,6 +7,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.slprime.chromatictooltips.api.EnricherPlace;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
@@ -15,9 +16,11 @@ import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.TextComponent;
-import com.slprime.chromatictooltips.event.ItemTitleEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.event.TitleEnricherEvent;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
+
+import cpw.mods.fml.common.registry.GameData;
 
 public class TitleEnricher implements ITooltipEnricher {
 
@@ -71,40 +74,57 @@ public class TitleEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
 
-        if (stack == null) {
-            final List<ITooltipComponent> lines = context.getContextTooltip();
-
-            if (!lines.isEmpty()) {
-
-                if (lines.get(0) instanceof TextComponent title) {
-                    String line = title.getLines()
-                        .get(0);
-
-                    if (ClientUtil.getColorCodeIndex(line) == TooltipLines.BASE_COLOR.ordinal()) {
-                        line = EnumChatFormatting.WHITE + line.replaceAll("^(?:§[0-9a-fk-or])+", "");
-                    }
-                    return new TooltipLines(line);
-                } else {
-                    return new TooltipLines(lines.get(0));
-                }
-
-            }
-
-            return null;
+        if (context.getItemStack() != null) {
+            return itemTitle(context);
+        } else if (context.getFluidStack() != null) {
+            return fluidTitle(context);
         } else {
-            return itemTitle(context, stack);
+            return defaultTitle(context);
         }
 
     }
 
-    protected TooltipLines itemTitle(TooltipContext context, ItemStack stack) {
+    protected TooltipLines defaultTitle(TooltipContext context) {
+        final List<ITooltipComponent> lines = context.getContextTooltip();
+
+        if (lines.isEmpty()) {
+            return null;
+        }
+
+        if (lines.get(0) instanceof TextComponent title) {
+            String line = title.getLines()
+                .get(0);
+
+            if (TooltipUtils.getColorCodeIndex(line) == TooltipLines.BASE_COLOR.ordinal()) {
+                line = EnumChatFormatting.WHITE + line.replaceAll("^(?:§[0-9a-fk-or])+", "");
+            }
+            return new TooltipLines(line);
+        } else {
+            return new TooltipLines(lines.get(0));
+        }
+
+    }
+
+    protected TooltipLines fluidTitle(TooltipContext context) {
+        final FluidStack fluid = context.getFluidStack();
+        final String displayName = fluid.getFluid()
+            .getLocalizedName(fluid);
+        final ITooltipComponent identifierComponent = new TextComponent(
+            EnumChatFormatting.DARK_GRAY + getAdvancedInfo(fluid));
+        final TitleEnricherEvent event = new TitleEnricherEvent(context, displayName);
+        TooltipUtils.postEvent(event);
+
+        return new TooltipLines(
+            new StackTitleTooltipComponent(EnumChatFormatting.AQUA + event.displayName, identifierComponent));
+    }
+
+    protected TooltipLines itemTitle(TooltipContext context) {
+        final ItemStack stack = context.getItemStack();
         final ITooltipComponent identifierComponent = new TextComponent(
             EnumChatFormatting.DARK_GRAY + getAdvancedInfo(stack));
-        final ItemTitleEnricherEvent event = new ItemTitleEnricherEvent(context, stack.getDisplayName());
-
-        ClientUtil.postEvent(event);
+        final TitleEnricherEvent event = new TitleEnricherEvent(context, stack.getDisplayName());
+        TooltipUtils.postEvent(event);
 
         return new TooltipLines(
             new StackTitleTooltipComponent(prepareItemDisplayName(stack, event.displayName), identifierComponent));
@@ -122,7 +142,7 @@ public class TitleEnricher implements ITooltipEnricher {
 
     private String getAdvancedInfo(ItemStack stack) {
 
-        if (ClientUtil.mc().gameSettings.advancedItemTooltips) {
+        if (TooltipUtils.mc().gameSettings.advancedItemTooltips) {
             final int itemId = Item.getIdFromItem(stack.getItem());
 
             if (stack.getHasSubtypes()) {
@@ -135,6 +155,23 @@ public class TitleEnricher implements ITooltipEnricher {
             return " #" + stack.getItemDamage();
         }
 
+        return "";
+    }
+
+    private String getAdvancedInfo(FluidStack fluidStack) {
+
+        if (TooltipUtils.mc().gameSettings.advancedItemTooltips) {
+            final int fluidId = GameData.getBlockRegistry()
+                .getId(
+                    fluidStack.getFluid()
+                        .getBlock());
+
+            if (fluidId == -1) {
+                return "";
+            }
+
+            return String.format(" #%04d", Integer.valueOf(fluidId));
+        }
         return "";
     }
 

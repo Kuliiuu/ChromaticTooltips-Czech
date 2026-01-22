@@ -22,7 +22,7 @@ import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.InlineComponent;
 import com.slprime.chromatictooltips.config.EnricherConfig;
 import com.slprime.chromatictooltips.event.AttributeEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class ItemStatsEnricher implements ITooltipEnricher {
 
@@ -58,7 +58,7 @@ public class ItemStatsEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
+        final ItemStack stack = context.getItemStack();
 
         if (stack == null || this.showOnlyIcons && !EnricherConfig.attributeModifierIconsEnabled) {
             return null;
@@ -128,7 +128,7 @@ public class ItemStatsEnricher implements ITooltipEnricher {
         }
 
         final AttributeEnricherEvent event = new AttributeEnricherEvent(context, stats);
-        ClientUtil.postEvent(event);
+        TooltipUtils.postEvent(event);
 
         Collections.sort(event.stats, (ItemStats a, ItemStats b) -> Double.compare(b.getOrder(), a.getOrder()));
 
@@ -143,9 +143,9 @@ public class ItemStatsEnricher implements ITooltipEnricher {
     }
 
     private static void addDurabilityAttribute(ItemStack stack, List<ItemStats> stats) {
-        if (stack.isItemStackDamageable()) {
+        if (stack.isItemStackDamageable() && !stack.getHasSubtypes()) {
             final int maxDurability = stack.getMaxDamage();
-            final int durability = maxDurability - stack.getItemDamageForDisplay();
+            final int durability = maxDurability - stack.getItemDamage();
             stats.add(new ItemStats.DurabilityStats(durability, maxDurability));
         }
     }

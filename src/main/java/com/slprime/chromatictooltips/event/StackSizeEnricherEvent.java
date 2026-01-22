@@ -1,18 +1,22 @@
 package com.slprime.chromatictooltips.event;
 
-import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.Fluid;
 
 import com.slprime.chromatictooltips.api.TooltipContext;
 
 public class StackSizeEnricherEvent extends TooltipEvent {
 
-    public FluidStack fluid;
-    public long stackSize;
+    public long stackAmount;
 
-    public StackSizeEnricherEvent(TooltipContext context, FluidStack fluid, long stackSize) {
+    public Fluid containedFluid;
+    public long containedFluidAmount;
+
+    public StackSizeEnricherEvent(TooltipContext context, long stackAmount, Fluid containedFluid,
+        long containedFluidAmount) {
         super(context);
-        this.fluid = fluid;
-        this.stackSize = stackSize;
+        this.stackAmount = stackAmount;
+        this.containedFluid = containedFluid;
+        this.containedFluidAmount = containedFluidAmount;
     }
 
 }

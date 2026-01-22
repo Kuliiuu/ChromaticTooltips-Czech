@@ -10,7 +10,7 @@ import net.minecraft.util.StatCollector;
 
 import com.slprime.chromatictooltips.component.ItemAttributeComponent;
 import com.slprime.chromatictooltips.component.TextComponent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class ItemStats {
 
@@ -18,8 +18,10 @@ public class ItemStats {
 
         public ArmorStats(int damageReduceAmount) {
             super(
-                ClientUtil.translate("enricher.attributes.armor.text", ClientUtil.formatNumbers(damageReduceAmount)),
-                ClientUtil.translate("enricher.attributes.armor.icon", ClientUtil.formatNumbers(damageReduceAmount)),
+                TooltipUtils
+                    .translate("enricher.attributes.armor.text", TooltipUtils.formatNumbers(damageReduceAmount)),
+                TooltipUtils
+                    .translate("enricher.attributes.armor.icon", TooltipUtils.formatNumbers(damageReduceAmount)),
                 damageReduceAmount,
                 "attributes/armor.png");
         }
@@ -91,14 +93,14 @@ public class ItemStats {
 
         public DurabilityStats(int durability, int maxDurability) {
             super(
-                ClientUtil.translate(
+                TooltipUtils.translate(
                     "enricher.attributes.durability.text",
-                    ClientUtil.formatNumbers(durability),
-                    ClientUtil.formatNumbers(maxDurability)),
-                ClientUtil.translate(
+                    TooltipUtils.formatNumbers(durability),
+                    TooltipUtils.formatNumbers(maxDurability)),
+                TooltipUtils.translate(
                     "enricher.attributes.durability.icon",
-                    ClientUtil.formatNumbers(durability),
-                    ClientUtil.formatNumbers(maxDurability)),
+                    TooltipUtils.formatNumbers(durability),
+                    TooltipUtils.formatNumbers(maxDurability)),
                 durability,
                 "attributes/durability.png");
         }
@@ -114,8 +116,8 @@ public class ItemStats {
 
         public BurnTimeStats(int burnTime) {
             super(
-                ClientUtil.translate("enricher.attributes.fuel.text", ClientUtil.formatNumbers(burnTime)),
-                ClientUtil.translate("enricher.attributes.fuel.icon", ClientUtil.formatNumbers(burnTime)),
+                TooltipUtils.translate("enricher.attributes.fuel.text", TooltipUtils.formatNumbers(burnTime)),
+                TooltipUtils.translate("enricher.attributes.fuel.icon", TooltipUtils.formatNumbers(burnTime)),
                 burnTime,
                 "attributes/fuel.png");
         }
@@ -171,12 +173,12 @@ public class ItemStats {
     }
 
     public ItemStats(String attributeName, double value, StatsOperator operator, String icon) {
-        final String attributeValue = ClientUtil.formatNumbers(Math.abs(value));
+        final String attributeValue = TooltipUtils.formatNumbers(Math.abs(value));
         final String dir = value >= 0 ? "plus" : "minus";
 
-        this.textLine = ClientUtil
+        this.textLine = TooltipUtils
             .translate("enricher.attributes." + operator.getKey() + ".text." + dir, attributeValue, attributeName);
-        this.iconLine = ClientUtil
+        this.iconLine = TooltipUtils
             .translate("enricher.attributes." + operator.getKey() + ".icon." + dir, attributeValue);
         this.value = value;
         this.icon = icon;
@@ -224,7 +226,7 @@ public class ItemStats {
 
     public ITooltipComponent getTextComponent() {
         return this.textLine != null
-            ? new TextComponent(ClientUtil.applyBaseColorIfAbsent(this.textLine, TooltipLines.BASE_COLOR))
+            ? new TextComponent(TooltipUtils.applyBaseColorIfAbsent(this.textLine, TooltipLines.BASE_COLOR))
             : null;
     }
 

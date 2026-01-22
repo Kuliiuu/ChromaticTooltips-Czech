@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.oredict.OreDictionary;
 
 import com.slprime.chromatictooltips.api.EnricherPlace;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.ITooltipEnricher;
 import com.slprime.chromatictooltips.api.ITooltipRenderer;
+import com.slprime.chromatictooltips.api.ITooltipRequestResolver;
 import com.slprime.chromatictooltips.api.TooltipBuilder;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
@@ -32,10 +32,31 @@ import com.slprime.chromatictooltips.api.TooltipStyle;
 import com.slprime.chromatictooltips.component.SectionComponent;
 import com.slprime.chromatictooltips.config.EnricherConfig;
 import com.slprime.chromatictooltips.event.TooltipEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.Parser;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class TooltipHandler {
+
+    private static class TooltipCache {
+
+        public long lastFrame = -1;
+        public long lastUpdateTime = -1;
+        public TooltipContext context = null;
+        public TooltipRequest request = null;
+        public int hashCode = -1;
+
+        public boolean isEmpty() {
+            return this.context == null;
+        }
+
+        public void clear() {
+            this.lastFrame = -1;
+            this.lastUpdateTime = -1;
+            this.context = null;
+            this.request = null;
+            this.hashCode = -1;
+        }
+    }
 
     protected static final WeakHashMap<ITooltipComponent, String> tipLineComponents = new WeakHashMap<>();
     protected static int nextComponentId = 0;
@@ -49,12 +70,11 @@ public class TooltipHandler {
     protected static final Parser parser = new Parser();
     protected static Class<? extends ITooltipRenderer> rendererClass = null;
     protected static final List<ITooltipEnricher> tooltipEnrichers = new ArrayList<>();
+    protected static final List<ITooltipRequestResolver> requestResolvers = new ArrayList<>();
 
-    // cache
-    protected static TooltipContext lastContext = null;
-    protected static TooltipLines lastTextLines = null;
+    protected static final TooltipCache tooltipCache = new TooltipCache();
+    protected static Point lastMousePosition = null;
     protected static boolean ignoreLastTooltip = true;
-    protected static int lastHashCode = -1;
 
     public static void reload() {
         TooltipHandler.otherTooltipRenderers.clear();
@@ -92,7 +112,7 @@ public class TooltipHandler {
         final ResourceLocation location = new ResourceLocation(ChromaticTooltips.MODID, CONFIG_FILE);
 
         try {
-            final IResource res = ClientUtil.mc()
+            final IResource res = TooltipUtils.mc()
                 .getResourceManager()
                 .getResource(location);
 
@@ -141,6 +161,10 @@ public class TooltipHandler {
         TooltipHandler.tooltipEnrichers.add(enricher);
     }
 
+    public static void addRequestResolver(ITooltipRequestResolver resolver) {
+        TooltipHandler.requestResolvers.add(resolver);
+    }
+
     public static void addEnricherAfter(String sectionId, ITooltipEnricher enricher) {
         int index = -1;
 
@@ -170,82 +194,54 @@ public class TooltipHandler {
     }
 
     public static void drawHoveringText(ItemStack stack, List<?> textLines) {
-        drawHoveringText(new TooltipRequest(null, stack, new TooltipLines(textLines), null));
+        drawHoveringText(new TooltipRequest(null, stack, null, new TooltipLines(textLines), null));
     }
 
     public static void drawHoveringText(List<?> textLines) {
-        drawHoveringText(new TooltipRequest(null, null, new TooltipLines(textLines), null));
+        drawHoveringText(new TooltipRequest(null, null, null, new TooltipLines(textLines), null));
     }
 
     public static void drawHoveringText(TooltipRequest request) {
-        if (request == null) {
-            ChromaticTooltips.LOG.error("drawHoveringText called with null request");
+
+        if (request == null || request.itemStack == null && request.fluidStack == null && request.tooltip.isEmpty()) {
             return;
         }
 
-        final int currentHash = ClientUtil.getMetaHash();
-        boolean updateContent = false;
+        // maximize performance by limiting updates (60 FPS target)
+        if ((System.currentTimeMillis() - TooltipHandler.tooltipCache.lastFrame) > 16) {
+            final int currentHash = TooltipUtils.getMetaHash();
 
-        if (request.stack == null && request.tooltip.isEmpty()) {
-            return;
+            if (TooltipHandler.tooltipCache.isEmpty() || !request.sameSubjectAs(TooltipHandler.tooltipCache.request)) {
+                TooltipHandler.tooltipCache.request = request.copy();
+                TooltipHandler.tooltipCache.context = createTooltipContext(request, null);
+                TooltipHandler.tooltipCache.lastUpdateTime = System.currentTimeMillis();
+            } else if (TooltipHandler.tooltipCache.hashCode != currentHash
+                || (System.currentTimeMillis() - TooltipHandler.tooltipCache.lastUpdateTime) > 100
+                || !request.equivalentTo(TooltipHandler.tooltipCache.request)) {
+                    TooltipHandler.tooltipCache.request = request.copy();
+                    TooltipHandler.tooltipCache.context = createTooltipContext(
+                        request,
+                        TooltipHandler.tooltipCache.context);
+                    TooltipHandler.tooltipCache.lastUpdateTime = System.currentTimeMillis();
+                }
+
+            TooltipHandler.tooltipCache.hashCode = currentHash;
+            TooltipHandler.tooltipCache.lastFrame = System.currentTimeMillis();
         }
 
-        final Point mouse = request.mouse != null ? request.mouse : ClientUtil.getMousePosition();
-
-        // change in item stack invalidates cache
-        if (TooltipHandler.lastContext != null
-            && !areItemStackEqual(request.stack, TooltipHandler.lastContext.getStack())) {
-            if (areStacksSameType(request.stack, TooltipHandler.lastContext.getStack())) {
-                updateContent = true;
-            } else {
-                clearCache();
-            }
-        }
-
-        // change in stack size may update content
-        if (TooltipHandler.lastContext != null && request.stack != null
-            && TooltipHandler.lastContext.getStack() != null
-            && TooltipHandler.lastContext.getStack().stackSize != request.stack.stackSize) {
-            updateContent = true;
-        }
-
-        // change in text lines may update context
-        if (!updateContent && TooltipHandler.lastContext != null
-            && !request.tooltip.equals(TooltipHandler.lastTextLines)) {
-            if (request.stack != null
-                || TooltipHandler.lastContext != null && Math.abs(TooltipHandler.lastContext.getMouseX() - mouse.x) < 3
-                    && Math.abs(TooltipHandler.lastContext.getMouseY() - mouse.y) < 3) {
-                updateContent = true;
-            } else {
-                clearCache();
-            }
-        }
-
-        if (TooltipHandler.lastContext == null) {
-            TooltipHandler.lastContext = TooltipHandler.getTooltipContext(request);
-            TooltipHandler.lastHashCode = currentHash;
-            TooltipHandler.lastTextLines = request.tooltip;
-        } else if (updateContent || TooltipHandler.lastHashCode != currentHash) {
-            TooltipHandler.lastContext.clear();
-
-            TooltipHandler.lastContext.setStack(request.stack);
-            TooltipHandler.lastContext.setPosition(mouse);
-            TooltipHandler.lastContext.setContextTooltip(request.tooltip);
-
-            TooltipHandler.lastHashCode = currentHash;
-            TooltipHandler.lastTextLines = request.tooltip;
-            enrichTooltip(TooltipHandler.lastContext);
-        } else {
-            TooltipHandler.lastContext.setPosition(mouse);
-        }
-
+        TooltipHandler.lastMousePosition = request.mouse != null ? request.mouse : TooltipUtils.getMousePosition();
         TooltipHandler.ignoreLastTooltip = false;
     }
 
-    public static TooltipContext getTooltipContext(TooltipRequest request) {
-        final ITooltipRenderer renderer = getRendererFor(request.context, request.stack);
-        final TooltipContext context = new TooltipContext(request, renderer);
-        context.setPosition(request.mouse != null ? request.mouse : ClientUtil.getMousePosition());
+    public static TooltipContext createTooltipContext(TooltipRequest request, TooltipContext previousContext) {
+        TooltipHandler.resolveRequest(request);
+        TooltipContext context;
+
+        if (previousContext != null) {
+            context = new TooltipContext(request, previousContext);
+        } else {
+            context = new TooltipContext(request, getRendererFor(request));
+        }
 
         if (EnricherConfig.keyboardModifiersEnabled) {
             updateSupportedModifiers(context);
@@ -255,39 +251,16 @@ public class TooltipHandler {
         return context;
     }
 
-    protected static boolean areItemStackEqual(ItemStack stackA, ItemStack stackB) {
-        if (stackA == null && stackB == null) return true;
-        if (stackA == null || stackB == null) return false;
-        if (!stackA.isItemEqual(stackB)) return false;
-
-        if (stackA.hasTagCompound() && stackB.hasTagCompound()) {
-            return stackA.stackTagCompound.equals(stackB.stackTagCompound);
+    protected static void resolveRequest(TooltipRequest request) {
+        for (ITooltipRequestResolver resolver : TooltipHandler.requestResolvers) {
+            if (resolver.resolve(request)) {
+                break;
+            }
         }
-
-        return (stackA.stackTagCompound == null || stackA.stackTagCompound.hasNoTags())
-            && (stackB.stackTagCompound == null || stackB.stackTagCompound.hasNoTags());
-    }
-
-    protected static boolean areStacksSameType(ItemStack stackA, ItemStack stackB) {
-        if (stackA == null && stackB == null) return true;
-        if (stackA == null || stackB == null) return false;
-
-        return stackA.getItem() == stackB.getItem() && (stackA.getItemDamage() == stackB.getItemDamage()
-            || stackA.getItemDamage() == OreDictionary.WILDCARD_VALUE
-            || stackB.getItemDamage() == OreDictionary.WILDCARD_VALUE
-            || stackA.getItem()
-                .isDamageable());
-    }
-
-    protected static void clearCache() {
-        TooltipHandler.lastContext = null;
-        TooltipHandler.ignoreLastTooltip = true;
-        TooltipHandler.lastTextLines = null;
-        TooltipHandler.lastHashCode = 0;
     }
 
     protected static void enrichTooltip(TooltipContext context) {
-        final TooltipModifier activeModifier = ClientUtil.getActiveModifier();
+        final TooltipModifier activeModifier = TooltipUtils.getActiveModifier();
         final TooltipStyle style = context.getRenderer()
             .getStyle();
         final ITooltipRenderer renderer = context.getRenderer();
@@ -338,7 +311,7 @@ public class TooltipHandler {
         context.addSection("body", new ArrayList<>(bodySections));
         context.addSection("footer", new ArrayList<>(footerSections));
 
-        ClientUtil.postEvent(new TooltipEnricherEvent(context));
+        TooltipUtils.postEvent(new TooltipEnricherEvent(context));
     }
 
     public static void updateSupportedModifiers(TooltipContext context) {
@@ -403,51 +376,60 @@ public class TooltipHandler {
         return bodySections;
     }
 
-    protected static ITooltipRenderer getRendererFor(String context, ItemStack stack) {
+    protected static ITooltipRenderer getRendererFor(TooltipRequest request) {
+        final String fallbackContext = request.itemStack != null ? "item"
+            : (request.fluidStack != null ? "fluid" : "default");
+        final String context = request.context != null ? request.context : fallbackContext;
 
-        if (context == null) {
-            context = stack != null ? "item" : "default";
+        if ("default".equals(context)) {
+            return TooltipHandler.defaultTooltipRenderer;
         }
 
+        ITooltipRenderer renderer = findRenderer(context, request);
+
+        if (renderer == null && (request.itemStack != null || request.fluidStack != null)
+            && !fallbackContext.equals(context)) {
+            renderer = findRenderer(fallbackContext, request);
+        }
+
+        if (renderer == null && request.fluidStack != null) {
+            renderer = findRenderer("item", null);
+        }
+
+        return renderer != null ? renderer : TooltipHandler.defaultTooltipRenderer;
+    }
+
+    private static ITooltipRenderer findRenderer(String context, TooltipRequest request) {
         for (ITooltipRenderer renderer : TooltipHandler.otherTooltipRenderers
             .getOrDefault(context, Collections.emptyList())) {
-            if (renderer.matches(stack)) {
+            if (renderer.matches(request)) {
                 return renderer;
             }
         }
-
-        if (stack != null && !"item".equals(context) && !"default".equals(context)) {
-            for (ITooltipRenderer renderer : TooltipHandler.otherTooltipRenderers
-                .getOrDefault("item", Collections.emptyList())) {
-                if (renderer.matches(stack)) {
-                    return renderer;
-                }
-            }
-        }
-
-        return TooltipHandler.defaultTooltipRenderer;
+        return null;
     }
 
     public static TooltipContext getLastTooltipContext() {
-        return TooltipHandler.lastContext;
+        return TooltipHandler.tooltipCache.context;
     }
 
     public static void drawLastTooltip() {
 
-        if (TooltipHandler.lastContext != null && !TooltipHandler.lastContext.isEmpty()
+        if (!TooltipHandler.tooltipCache.isEmpty() && !TooltipHandler.tooltipCache.context.isEmpty()
             && !TooltipHandler.ignoreLastTooltip) {
-            TooltipHandler.lastContext.draw();
+            TooltipHandler.tooltipCache.context
+                .drawAtMousePosition(TooltipHandler.lastMousePosition.x, TooltipHandler.lastMousePosition.y);
             TooltipHandler.ignoreLastTooltip = true;
-        } else if (TooltipHandler.lastContext != null && TooltipHandler.ignoreLastTooltip) {
-            TooltipHandler.clearCache();
+        } else if (!TooltipHandler.tooltipCache.isEmpty() && TooltipHandler.ignoreLastTooltip) {
+            TooltipHandler.tooltipCache.clear();
         }
 
     }
 
     public static boolean nextTooltipPage() {
 
-        if (TooltipHandler.lastContext != null) {
-            return TooltipHandler.lastContext.nextTooltipPage();
+        if (!TooltipHandler.tooltipCache.isEmpty()) {
+            return TooltipHandler.tooltipCache.context.nextTooltipPage();
         }
 
         return false;
@@ -455,8 +437,8 @@ public class TooltipHandler {
 
     public static boolean previousTooltipPage() {
 
-        if (TooltipHandler.lastContext != null) {
-            return TooltipHandler.lastContext.previousTooltipPage();
+        if (!TooltipHandler.tooltipCache.isEmpty()) {
+            return TooltipHandler.tooltipCache.context.previousTooltipPage();
         }
 
         return false;

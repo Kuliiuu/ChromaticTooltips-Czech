@@ -12,7 +12,6 @@ import java.util.function.Predicate;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.item.ItemStack;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -25,17 +24,18 @@ import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.ITooltipRenderer;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipModifier;
+import com.slprime.chromatictooltips.api.TooltipRequest;
 import com.slprime.chromatictooltips.api.TooltipStyle;
 import com.slprime.chromatictooltips.component.SectionComponent;
 import com.slprime.chromatictooltips.component.SpaceComponent;
 import com.slprime.chromatictooltips.component.TextComponent;
 import com.slprime.chromatictooltips.config.GeneralConfig;
 import com.slprime.chromatictooltips.event.RenderTooltipEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.ItemStackFilterParser;
 import com.slprime.chromatictooltips.util.SectionBox;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
 import com.slprime.chromatictooltips.util.TooltipSpacing;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class TooltipRenderer implements ITooltipRenderer {
 
@@ -50,7 +50,7 @@ public class TooltipRenderer implements ITooltipRenderer {
     protected SectionBox navigationBox = null;
     protected SectionBox tooltipBox;
 
-    protected Predicate<ItemStack> filter;
+    protected Predicate<TooltipRequest> filter;
     protected TooltipStyle tooltipStyle;
 
     public TooltipRenderer(TooltipStyle style) {
@@ -137,8 +137,8 @@ public class TooltipRenderer implements ITooltipRenderer {
     }
 
     @Override
-    public boolean matches(ItemStack stack) {
-        return this.filter == null || this.filter.test(stack);
+    public boolean matches(TooltipRequest request) {
+        return this.filter == null || this.filter.test(request);
     }
 
     @Override
@@ -216,11 +216,11 @@ public class TooltipRenderer implements ITooltipRenderer {
         String text = "";
 
         if (!nextKey.isEmpty() && !previousKey.isEmpty()) {
-            text = ClientUtil.translate("navigation.page", currentPage, totalPages, nextKey, previousKey);
+            text = TooltipUtils.translate("navigation.page", currentPage, totalPages, nextKey, previousKey);
         } else if (!nextKey.isEmpty()) {
-            text = ClientUtil.translate("navigation.page.next_only", currentPage, totalPages, nextKey);
+            text = TooltipUtils.translate("navigation.page.next_only", currentPage, totalPages, nextKey);
         } else if (!previousKey.isEmpty()) {
-            text = ClientUtil.translate("navigation.page.previous_only", currentPage, totalPages, previousKey);
+            text = TooltipUtils.translate("navigation.page.previous_only", currentPage, totalPages, previousKey);
         }
 
         if (!text.isEmpty()) {
@@ -258,7 +258,7 @@ public class TooltipRenderer implements ITooltipRenderer {
     }
 
     protected Dimension getFreeSpace(int scaleFactor) {
-        final Minecraft mc = ClientUtil.mc();
+        final Minecraft mc = TooltipUtils.mc();
         return new Dimension(
             (int) Math.ceil(mc.displayWidth / (float) scaleFactor),
             (int) Math.ceil(mc.displayHeight / (float) scaleFactor));
@@ -272,7 +272,7 @@ public class TooltipRenderer implements ITooltipRenderer {
             final TooltipSpacing margin = section.getMargin();
             final int width = section.getWidth() - margin.getInline();
             final int height = section.getHeight() - margin.getBlock();
-            final float scaleShift = (float) context.getScaleFactor() / ClientUtil.getScaledResolution()
+            final float scaleShift = (float) context.getScaleFactor() / TooltipUtils.getScaledResolution()
                 .getScaleFactor();
             final Rectangle tooltipRectangle = new Rectangle(
                 x + (int) (margin.getLeft() * scaleShift),
@@ -281,7 +281,7 @@ public class TooltipRenderer implements ITooltipRenderer {
                 (int) (height * scaleShift));
 
             drawContent(context, section, scaleShift, x, y);
-            ClientUtil.postEvent(new RenderTooltipEvent(context, section, tooltipRectangle));
+            TooltipUtils.postEvent(new RenderTooltipEvent(context, section, tooltipRectangle));
         }
 
     }
@@ -291,7 +291,7 @@ public class TooltipRenderer implements ITooltipRenderer {
         RenderHelper.disableStandardItemLighting();
         GL11.glDisable(GL12.GL_RESCALE_NORMAL);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
-        ClientUtil.incZLevel(DEFAULT_Z_INDEX);
+        TooltipUtils.incZLevel(DEFAULT_Z_INDEX);
 
         if (scaleShift != 1.0f) {
             GL11.glTranslatef(x, y, 0);
@@ -302,7 +302,7 @@ public class TooltipRenderer implements ITooltipRenderer {
             section.draw(x, y, section.getWidth(), context);
         }
 
-        ClientUtil.incZLevel(-DEFAULT_Z_INDEX);
+        TooltipUtils.incZLevel(-DEFAULT_Z_INDEX);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
         RenderHelper.enableStandardItemLighting();

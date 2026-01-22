@@ -11,6 +11,7 @@ import org.lwjgl.input.Keyboard;
 
 import com.slprime.chromatictooltips.enricher.ContextInfoEnricher;
 import com.slprime.chromatictooltips.enricher.EnchantmentEnricher;
+import com.slprime.chromatictooltips.enricher.FluidInfoEnricher;
 import com.slprime.chromatictooltips.enricher.HotkeyEnricher;
 import com.slprime.chromatictooltips.enricher.ItemInfoEnricher;
 import com.slprime.chromatictooltips.enricher.ItemStatsEnricher;
@@ -19,12 +20,13 @@ import com.slprime.chromatictooltips.enricher.ModInfoEnricher;
 import com.slprime.chromatictooltips.enricher.OreDictionaryEnricher;
 import com.slprime.chromatictooltips.enricher.StackSizeEnricher;
 import com.slprime.chromatictooltips.enricher.TitleEnricher;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
@@ -59,6 +61,7 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
         TooltipHandler.addEnricher(new StackSizeEnricher());
         TooltipHandler.addEnricher(new HotkeyEnricher());
         TooltipHandler.addEnricher(new ItemInfoEnricher());
+        TooltipHandler.addEnricher(new FluidInfoEnricher());
         TooltipHandler.addEnricher(new EnchantmentEnricher());
         TooltipHandler.addEnricher(new ItemStatsEnricher(false));
         TooltipHandler.addEnricher(new OreDictionaryEnricher());
@@ -72,7 +75,7 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
 
-        if (ClientUtil.mc()
+        if (TooltipUtils.mc()
             .getResourceManager() instanceof IReloadableResourceManager manager) {
             manager.registerReloadListener(this);
         } else {
@@ -80,7 +83,7 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onScreenPostDraw(DrawScreenEvent.Post event) {
         TooltipHandler.drawLastTooltip();
     }

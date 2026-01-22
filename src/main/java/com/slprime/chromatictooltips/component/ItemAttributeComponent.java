@@ -10,8 +10,8 @@ import org.lwjgl.opengl.GL11;
 import com.slprime.chromatictooltips.ChromaticTooltips;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.TooltipContext;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class ItemAttributeComponent implements ITooltipComponent {
 
@@ -58,7 +58,7 @@ public class ItemAttributeComponent implements ITooltipComponent {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glColor4f(1, 1, 1, 1);
-        ClientUtil.bindTexture(this.resourceLocation);
+        TooltipUtils.bindTexture(this.resourceLocation);
 
         drawQuad(x, y, ICON_SIZE, ICON_SIZE);
 

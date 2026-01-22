@@ -10,10 +10,12 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
 
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.oredict.OreDictionary;
+
+import com.slprime.chromatictooltips.api.TooltipRequest;
 
 import cpw.mods.fml.common.registry.FMLControlledNamespacedRegistry;
 import cpw.mods.fml.common.registry.GameData;
@@ -56,18 +58,18 @@ public class ItemStackFilterParser {
         }
     }
 
-    protected static final Map<String, Function<String, Predicate<ItemStack>>> customFilters = new HashMap<>();
+    protected static final Map<String, Function<String, Predicate<TooltipRequest>>> customFilters = new HashMap<>();
 
     private ItemStackFilterParser() {}
 
-    public static Predicate<ItemStack> parse(String filterText) {
-        Predicate<ItemStack> filter = stack -> false;
+    public static Predicate<TooltipRequest> parse(String filterText) {
+        Predicate<TooltipRequest> filter = request -> false;
         boolean hasFilters = false;
         filterText = filterText.trim();
 
         if (!filterText.isEmpty()) {
             for (String part : filterText.split("\\s*\\|\\s*")) {
-                Predicate<ItemStack> ruleFilter = parsePart(part);
+                Predicate<TooltipRequest> ruleFilter = parsePart(part);
                 if (ruleFilter != null) {
                     filter = filter.or(ruleFilter);
                     hasFilters = true;
@@ -78,16 +80,16 @@ public class ItemStackFilterParser {
         return hasFilters ? filter : null;
     }
 
-    public static void registerCustomFilter(String name, Function<String, Predicate<ItemStack>> filterFunction) {
+    public static void registerCustomFilter(String name, Function<String, Predicate<TooltipRequest>> filterFunction) {
         ItemStackFilterParser.customFilters.put(name, filterFunction);
     }
 
-    private static Predicate<ItemStack> parsePart(String part) {
-        Predicate<ItemStack> partFilter = stack -> true;
+    private static Predicate<TooltipRequest> parsePart(String part) {
+        Predicate<TooltipRequest> partFilter = request -> true;
         boolean hasFilters = false;
 
         for (String token : part.split("\\s+")) {
-            final Predicate<ItemStack> ruleFilter = parseRules(token);
+            final Predicate<TooltipRequest> ruleFilter = parseRules(token);
 
             if (ruleFilter != null) {
                 partFilter = partFilter.and(ruleFilter);
@@ -98,16 +100,16 @@ public class ItemStackFilterParser {
         return hasFilters ? new SafePredicate<>(partFilter) : null;
     }
 
-    protected static Predicate<ItemStack> parseRules(String token) {
-        Predicate<ItemStack> orFilter = stack -> false;
-        Predicate<ItemStack> orNotFilter = stack -> false;
-        Predicate<ItemStack> ruleFilter = stack -> true;
+    protected static Predicate<TooltipRequest> parseRules(String token) {
+        Predicate<TooltipRequest> orFilter = request -> false;
+        Predicate<TooltipRequest> orNotFilter = request -> false;
+        Predicate<TooltipRequest> ruleFilter = request -> true;
         boolean hasFilters = false;
         boolean hasNotFilters = false;
 
         for (String rule : token.split(",")) {
             boolean ignore = rule.startsWith("!");
-            Predicate<ItemStack> filter = null;
+            Predicate<TooltipRequest> filter = null;
 
             if (ignore) {
                 rule = rule.substring(1);
@@ -125,7 +127,7 @@ public class ItemStackFilterParser {
 
                 if (rule.contains(":")) {
                     final String[] parts = rule.split(":", 2);
-                    final Function<String, Predicate<ItemStack>> customFilter = ItemStackFilterParser.customFilters.get(parts[0]);
+                    final Function<String, Predicate<TooltipRequest>> customFilter = ItemStackFilterParser.customFilters.get(parts[0]);
 
                     if (customFilter != null) {
                         filter = customFilter.apply(parts[1]);
@@ -180,24 +182,28 @@ public class ItemStackFilterParser {
         return null;
     }
 
-    protected static Predicate<ItemStack> getOreDictFilter(String rule) {
+    protected static Predicate<TooltipRequest> getOreDictFilter(String rule) {
         final Predicate<String> matcher = getMatcher(rule);
 
         if (matcher == null) {
             return null;
         }
 
-        return stack -> IntStream.of(OreDictionary.getOreIDs(stack))
+        return request -> request.itemStack != null && IntStream.of(OreDictionary.getOreIDs(request.itemStack))
                 .anyMatch(id -> matcher.test(OreDictionary.getOreName(id)));
     }
 
-    protected static Predicate<ItemStack> getTagFilter(String rule) {
+    protected static Predicate<TooltipRequest> getTagFilter(String rule) {
         final String[] parts = rule.split("=", 2);
         final String[] path = parts[0].split("\\.");
         final Predicate<String> value = getMatcher(parts[1]);
 
-        return stack -> {
-            Object tag = stack.getTagCompound();
+        return request -> {
+            if (request.itemStack == null) {
+                return false;
+            }
+
+            Object tag = request.itemStack.getTagCompound();
 
             for (int i = 0; i < path.length && tag != null; i++) {
                 if (tag instanceof NBTTagCompound compound) {
@@ -213,13 +219,17 @@ public class ItemStackFilterParser {
         };
     }
 
-    protected static Predicate<ItemStack> getRarityFilter(String rule) {
+    protected static Predicate<TooltipRequest> getRarityFilter(String rule) {
         final Predicate<String> matcher = getMatcher(rule);
 
-        return stack -> matcher != null && matcher.test(stack.getRarity().rarityName);
+        if (matcher == null) {
+            return null;
+        }
+
+        return request -> request.itemStack != null  && matcher.test(request.itemStack.getRarity().rarityName);
     }
 
-    protected static Predicate<ItemStack> getDamageFilter(String rule) {
+    protected static Predicate<TooltipRequest> getDamageFilter(String rule) {
         final String[] range = rule.split("-");
         final IntPredicate matcher;
 
@@ -232,10 +242,10 @@ public class ItemStackFilterParser {
             matcher = dmg -> dmg >= damageStart && dmg <= damageEnd;
         }
 
-        return stack -> matcher.test(stack.getItemDamage());
+        return request -> request.itemStack != null && matcher.test(request.itemStack.getItemDamage());
     }
 
-    protected static Predicate<ItemStack> getStringIdentifierFilter(String rule) {
+    protected static Predicate<TooltipRequest> getStringIdentifierFilter(String rule) {
         final FMLControlledNamespacedRegistry<Item> iItemRegistry = GameData.getItemRegistry();
         final Predicate<String> matcher = getMatcher(rule);
 
@@ -243,8 +253,17 @@ public class ItemStackFilterParser {
             return null;
         }
 
-        return stack -> {
-            String name = iItemRegistry.getNameForObject(stack.getItem());
+        return request -> {
+            String name = null;
+
+            if (request.itemStack != null) {
+                name = iItemRegistry.getNameForObject(request.itemStack.getItem());
+            } else if (request.fluidStack != null) {
+                name = FluidRegistry.getDefaultFluidName(request.fluidStack.getFluid());
+            } else {
+                return false;
+            }
+
             return name != null && !name.isEmpty() && matcher.test(name);
         };
     }

@@ -6,11 +6,13 @@ import java.util.List;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraftforge.fluids.FluidStack;
 
 public class TooltipBuilder {
 
     protected String context;
-    protected ItemStack stack;
+    protected ItemStack itemStack;
+    protected FluidStack fluidStack;
     protected TooltipLines textLines = new TooltipLines();
     protected Rectangle anchorBounds = new Rectangle(0, 0, 0, 0);
     protected Point mouse;
@@ -23,7 +25,14 @@ public class TooltipBuilder {
     }
 
     public TooltipBuilder stack(ItemStack stack) {
-        this.stack = stack;
+        this.itemStack = stack;
+        this.fluidStack = null;
+        return this;
+    }
+
+    public TooltipBuilder stack(FluidStack stack) {
+        this.itemStack = null;
+        this.fluidStack = stack;
         return this;
     }
 
@@ -83,6 +92,6 @@ public class TooltipBuilder {
     }
 
     public TooltipRequest build() {
-        return new TooltipRequest(this.context, this.stack, this.textLines, this.mouse);
+        return new TooltipRequest(this.context, this.itemStack, this.fluidStack, this.textLines, this.mouse);
     }
 }

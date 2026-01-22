@@ -31,9 +31,10 @@ import com.slprime.chromatictooltips.ChromaticTooltips;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.config.GeneralConfig;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.Event;
 
-public class ClientUtil {
+public class TooltipUtils {
 
     private static class GuiHook extends GuiScreen {
 
@@ -56,6 +57,8 @@ public class ClientUtil {
     private static final int SHIFT_HASH = 1 << 26;
     private static final int CTRL_HASH = 1 << 25;
     private static final GuiHook gui = new GuiHook();
+
+    public static final boolean isHodgepodgeLoaded = Loader.isModLoaded("hodgepodge");
 
     private static DecimalFormat getDecimalFormat() {
         return decimalFormatters.computeIfAbsent(Locale.getDefault(Locale.Category.FORMAT), locale -> {
@@ -131,22 +134,16 @@ public class ClientUtil {
         return new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
     }
 
-    @Deprecated
-    public static float getTooltipScaleShift() {
-        final float scaleFactor = getScaledResolution().getScaleFactor();
-        return Math.max(1, scaleFactor + GeneralConfig.scaleFactor) / scaleFactor;
-    }
-
     public static int getTooltipScale() {
         return Math.max(1, getScaledResolution().getScaleFactor() + GeneralConfig.scaleFactor);
     }
 
     public static TooltipModifier getActiveModifier() {
-        if (ClientUtil.isShiftKeyDown()) {
+        if (TooltipUtils.isShiftKeyDown()) {
             return TooltipModifier.SHIFT;
-        } else if (ClientUtil.isCtrlKeyDown()) {
+        } else if (TooltipUtils.isCtrlKeyDown()) {
             return TooltipModifier.CTRL;
-        } else if (ClientUtil.isAltKeyDown()) {
+        } else if (TooltipUtils.isAltKeyDown()) {
             return TooltipModifier.ALT;
         }
         return TooltipModifier.NONE;
@@ -154,7 +151,7 @@ public class ClientUtil {
 
     public static String applyBaseColorIfAbsent(String str, EnumChatFormatting baseColor) {
 
-        if (!ClientUtil.COLOR_CODES_PATTERN.matcher(str)
+        if (!TooltipUtils.COLOR_CODES_PATTERN.matcher(str)
             .find()) {
             return baseColor + str;
         }

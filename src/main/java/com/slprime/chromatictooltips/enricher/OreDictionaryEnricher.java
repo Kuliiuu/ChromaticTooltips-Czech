@@ -15,14 +15,14 @@ import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.TextComponent;
 import com.slprime.chromatictooltips.config.EnricherConfig;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class OreDictionaryEnricher implements ITooltipEnricher {
 
     protected String titleComponent;
 
     public OreDictionaryEnricher() {
-        this.titleComponent = ClientUtil.translate("enricher.oreDictionary.title");
+        this.titleComponent = TooltipUtils.translate("enricher.oreDictionary.title");
     }
 
     @Override
@@ -42,7 +42,7 @@ public class OreDictionaryEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
+        final ItemStack stack = context.getItemStack();
 
         if (stack == null || !EnricherConfig.oreDictionaryEnabled) {
             return null;
@@ -53,7 +53,7 @@ public class OreDictionaryEnricher implements ITooltipEnricher {
         for (int oredict : OreDictionary.getOreIDs(stack)) {
             components.add(
                 new TextComponent(
-                    ClientUtil.translate("enricher.oreDictionary.entry", OreDictionary.getOreName(oredict))));
+                    TooltipUtils.translate("enricher.oreDictionary.entry", OreDictionary.getOreName(oredict))));
         }
 
         if (!components.isEmpty()) {

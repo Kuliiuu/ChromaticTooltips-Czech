@@ -16,8 +16,8 @@ import com.slprime.chromatictooltips.component.ParagraphComponent;
 import com.slprime.chromatictooltips.component.SpaceComponent;
 import com.slprime.chromatictooltips.component.TextComponent;
 import com.slprime.chromatictooltips.event.TextLinesConverterEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class TooltipLines {
 
@@ -32,8 +32,8 @@ public class TooltipLines {
     protected static final String HEADER_SUFFIX = "§h";
     protected static final int HEADER_SPACING = 4;
 
-    private final List<Object> textLines = new ArrayList<>();
-    private EnumSet<TooltipModifier> supportedModifiers = EnumSet.noneOf(TooltipModifier.class);
+    protected final List<Object> textLines = new ArrayList<>();
+    protected EnumSet<TooltipModifier> supportedModifiers = EnumSet.noneOf(TooltipModifier.class);
 
     public TooltipLines() {}
 
@@ -65,12 +65,16 @@ public class TooltipLines {
     }
 
     public TooltipLines lines(List<?> lines) {
+        if (lines == null) return this;
 
-        if (lines != null) {
-            for (Object line : lines) {
-                if (line != null) {
-                    this.textLines.add(line);
-                }
+        for (Object line : lines) {
+            if (line instanceof TooltipLines tl) {
+                this.textLines.addAll(tl.textLines);
+                this.supportedModifiers.addAll(tl.supportedModifiers);
+            } else if (line instanceof String str) {
+                this.textLines.addAll(Arrays.asList(str.split("\n")));
+            } else if (line != null) {
+                this.textLines.add(line);
             }
         }
 
@@ -104,7 +108,7 @@ public class TooltipLines {
         final List<ITooltipComponent> results = new ArrayList<>();
         final TextLinesConverterEvent event = new TextLinesConverterEvent(context, this.textLines);
         final ITooltipRenderer renderer = context.getRenderer();
-        ClientUtil.postEvent(event);
+        TooltipUtils.postEvent(event);
 
         for (Object line : event.list) {
 
@@ -112,8 +116,8 @@ public class TooltipLines {
                 results.add(component);
             } else if ("".equals(line)) {
                 results.add(new ParagraphComponent());
-            } else
-                if (line instanceof String str && !ClientUtil.isBlacklistedLine(str) && !detectModifierComponent(str)) {
+            } else if (line instanceof String str && !TooltipUtils.isBlacklistedLine(str)
+                && !detectModifierComponent(str)) {
                     final Matcher matcher = DIVIDER_PATTERN.matcher(str);
 
                     if (matcher.matches()) {
@@ -125,7 +129,7 @@ public class TooltipLines {
                     } else if (str.endsWith(HEADER_SUFFIX)) {
                         results.add(
                             new TextComponent(
-                                ClientUtil.applyBaseColorIfAbsent(
+                                TooltipUtils.applyBaseColorIfAbsent(
                                     str.substring(0, str.length() - HEADER_SUFFIX.length()),
                                     BASE_COLOR),
                                 HEADER_SPACING));
@@ -133,7 +137,7 @@ public class TooltipLines {
                         ITooltipComponent component = TooltipHandler.getTooltipComponent(str);
 
                         if (component == null) {
-                            component = new TextComponent(ClientUtil.applyBaseColorIfAbsent(str, BASE_COLOR));
+                            component = new TextComponent(TooltipUtils.applyBaseColorIfAbsent(str, BASE_COLOR));
                         }
 
                         results.add(component);

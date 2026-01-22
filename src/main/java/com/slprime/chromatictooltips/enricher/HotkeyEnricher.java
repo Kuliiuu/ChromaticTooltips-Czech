@@ -16,7 +16,7 @@ import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.component.TextComponent;
 import com.slprime.chromatictooltips.config.EnricherConfig;
 import com.slprime.chromatictooltips.event.HotkeyEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class HotkeyEnricher implements ITooltipEnricher {
 
@@ -47,7 +47,7 @@ public class HotkeyEnricher implements ITooltipEnricher {
 
     protected TextComponent hotkeysListComponent(TooltipContext context) {
         final HotkeyEnricherEvent event = new HotkeyEnricherEvent(context, new HashMap<>());
-        ClientUtil.postEvent(event);
+        TooltipUtils.postEvent(event);
 
         event.hotkeys.remove(null);
         event.hotkeys.remove("");
@@ -93,9 +93,9 @@ public class HotkeyEnricher implements ITooltipEnricher {
     }
 
     protected String getHotkeyTip(List<String> keys, String message) {
-        return ClientUtil.translate(
+        return TooltipUtils.translate(
             "enricher.hotkeys.keybind.entry",
-            String.join(ClientUtil.translate("enricher.hotkeys.keybind.keys"), keys),
+            String.join(TooltipUtils.translate("enricher.hotkeys.keybind.keys"), keys),
             message);
     }
 

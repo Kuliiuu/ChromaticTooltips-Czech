@@ -18,7 +18,7 @@ import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.event.ItemInfoEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class ItemInfoEnricher implements ITooltipEnricher {
 
@@ -39,42 +39,41 @@ public class ItemInfoEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
+        final ItemStack stack = context.getItemStack();
 
         if (stack == null) {
             return null;
         }
 
         final ItemInfoEnricherEvent event = new ItemInfoEnricherEvent(context, itemInformation(stack.copy()));
-        ClientUtil.postEvent(event);
+        TooltipUtils.postEvent(event);
 
         return new TooltipLines(event.tooltip);
     }
 
     protected List<String> itemInformation(ItemStack stack) {
-        final Minecraft mc = ClientUtil.mc();
-        final List<String> namelist = new ArrayList<>();
+        final Minecraft mc = TooltipUtils.mc();
+        final List<String> tooltip = new ArrayList<>();
         final String displayName = stack.getDisplayName();
-        namelist.add(displayName); // temporary name added for information gathering
+        tooltip.add(displayName); // temporary name added for information gathering
 
         try {
             stack.getItem()
-                .addInformation(stack, mc.thePlayer, namelist, mc.gameSettings.advancedItemTooltips);
+                .addInformation(stack, mc.thePlayer, tooltip, mc.gameSettings.advancedItemTooltips);
 
             if (stack.hasTagCompound() && stack.getTagCompound()
                 .hasKey("display", 10)) {
-                addItemColorAndLore(stack, namelist, mc.gameSettings.advancedItemTooltips);
+                addItemColorAndLore(stack, tooltip, mc.gameSettings.advancedItemTooltips);
             }
 
-            ForgeEventFactory.onItemTooltip(stack, mc.thePlayer, namelist, mc.gameSettings.advancedItemTooltips);
+            ForgeEventFactory.onItemTooltip(stack, mc.thePlayer, tooltip, mc.gameSettings.advancedItemTooltips);
         } catch (Exception e) {}
 
-        if (!namelist.isEmpty() && namelist.get(0)
-            .contains(displayName)) {
-            namelist.remove(0); // remove temporary name
+        if (!tooltip.isEmpty()) {
+            tooltip.remove(0); // remove temporary name
         }
 
-        return namelist;
+        return tooltip;
     }
 
     protected void addItemColorAndLore(ItemStack stack, List<String> arraylist, boolean advancedItemTooltips) {

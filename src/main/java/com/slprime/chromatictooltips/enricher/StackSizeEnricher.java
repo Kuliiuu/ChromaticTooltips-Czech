@@ -1,10 +1,12 @@
 package com.slprime.chromatictooltips.enricher;
 
+import java.awt.Point;
 import java.util.EnumSet;
 
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidContainerRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.IFluidContainerItem;
@@ -16,7 +18,7 @@ import com.slprime.chromatictooltips.api.TooltipLines;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.config.EnricherConfig;
 import com.slprime.chromatictooltips.event.StackSizeEnricherEvent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class StackSizeEnricher implements ITooltipEnricher {
 
@@ -37,40 +39,69 @@ public class StackSizeEnricher implements ITooltipEnricher {
 
     @Override
     public TooltipLines build(TooltipContext context) {
-        final ItemStack stack = context.getStack();
 
-        if (stack == null || !EnricherConfig.stackSizeEnabled) {
+        if (!EnricherConfig.stackSizeEnabled) {
             return null;
         }
 
-        final long stackSize = EnricherConfig.includeContainerInventoryEnabled ? getStackSize(context)
-            : stack.stackSize;
-        final StackSizeEnricherEvent event = new StackSizeEnricherEvent(context, getFluid(stack), stackSize);
-        ClientUtil.postEvent(event);
+        final ItemStack stack = context.getItemStack();
+        final FluidStack fluid = context.getFluidStack();
+        Fluid containedFluid = null;
+        long containedFluidAmount = 0;
+        long stackAmount = 0;
 
-        if (event.stackSize <= 0 || event.fluid != null && event.fluid.amount <= 0) {
+        if (stack != null) {
+            final FluidStack stackFluid = getFluid(stack);
+            stackAmount = EnricherConfig.includeContainerInventoryEnabled ? getStackSize(stack) : stack.stackSize;
+
+            if (stackFluid != null) {
+                containedFluid = stackFluid.getFluid();
+                containedFluidAmount = stackFluid.amount;
+            }
+
+        } else if (fluid != null) {
+            stackAmount = fluid.amount;
+        } else {
             return null;
         }
 
-        if (event.fluid == null && stackSize <= stack.getMaxStackSize()
-            && stackSize == stack.stackSize
-            && EnricherConfig.showOnlyWhenOverStackSizeEnabled) {
+        final StackSizeEnricherEvent event = new StackSizeEnricherEvent(
+            context,
+            stackAmount,
+            containedFluid,
+            containedFluidAmount);
+        TooltipUtils.postEvent(event);
+
+        if (event.stackAmount <= 0) {
             return null;
         }
 
-        if (event.fluid != null) {
-            return new TooltipLines(formatFluidAmount(event.fluid.amount * event.stackSize));
+        final TooltipLines components = new TooltipLines();
+
+        if (stack != null && event.stackAmount > 1
+            && (!EnricherConfig.showOnlyWhenOverStackSizeEnabled || event.stackAmount != stack.stackSize
+                || event.stackAmount >= 10_000)) {
+            components.line(formatStackSize(event.stackAmount, stack.getMaxStackSize()));
         }
 
-        return new TooltipLines(formatStackSize(event.stackSize, stack.getMaxStackSize()));
+        if (stack != null && event.containedFluid != null && event.containedFluidAmount > 0) {
+            components.line(formatFluidAmount(event.stackAmount * event.containedFluidAmount));
+        }
+
+        if (fluid != null && event.stackAmount > 0
+            && (!EnricherConfig.showOnlyWhenOverStackSizeEnabled || event.stackAmount >= 10_000)) {
+            components.line(formatFluidAmount(event.stackAmount));
+        }
+
+        return components;
     }
 
-    protected long getStackSize(TooltipContext context) {
-        final GuiContainer guiContainer = ClientUtil.getGuiContainer();
-        final ItemStack stack = context.getStack();
+    protected long getStackSize(ItemStack stack) {
+        final GuiContainer guiContainer = TooltipUtils.getGuiContainer();
 
         if (guiContainer != null) {
-            final Slot slot = guiContainer.getSlotAtPosition(context.getMouseX(), context.getMouseY());
+            final Point mouse = TooltipUtils.getMousePosition();
+            final Slot slot = guiContainer.getSlotAtPosition(mouse.x, mouse.y);
 
             if (slot != null && slot.getHasStack()) {
                 long stackSize = 0;
@@ -83,7 +114,7 @@ public class StackSizeEnricher implements ITooltipEnricher {
                     }
                 }
 
-                return stackSize;
+                return stackSize == 0 ? stack.stackSize : stackSize;
             }
         }
 
@@ -100,46 +131,46 @@ public class StackSizeEnricher implements ITooltipEnricher {
         return fluidStack;
     }
 
-    protected String formatStackSize(long stackSize, int maxStackSize) {
+    protected String formatStackSize(long stackAmount, int maxStackSize) {
         return format(
-            stackSize,
+            stackAmount,
             maxStackSize,
-            ClientUtil.translate("enricher.stacksize.item", "%s = %s * %s + %s"),
-            ClientUtil.translate("enricher.stacksize.item", "%s = %s * %s"),
-            ClientUtil.translate("enricher.stacksize.item", "%s"));
+            "enricher.stacksize.item.full",
+            "enricher.stacksize.item.short",
+            "enricher.stacksize.item");
     }
 
-    protected String formatFluidAmount(long amount) {
+    protected String formatFluidAmount(long stackAmount) {
         return format(
-            amount,
+            stackAmount,
             144,
-            ClientUtil.translate("enricher.stacksize.fluid", "%s L = %s * %s L + %s L"),
-            ClientUtil.translate("enricher.stacksize.fluid", "%s L = %s * %s L"),
-            ClientUtil.translate("enricher.stacksize.fluid", "%s L"));
+            "enricher.stacksize.fluid.full",
+            "enricher.stacksize.fluid.short",
+            "enricher.stacksize.fluid");
     }
 
-    protected String format(long stackSize, int maxStackSize, String fullPattern, String shortPattern,
+    protected String format(long stackAmount, int maxStackSize, String fullPattern, String shortPattern,
         String stackPattern) {
 
-        if (stackSize <= maxStackSize || maxStackSize == 1) {
-            return String.format(stackPattern, ClientUtil.formatNumbers(stackSize));
+        if (stackAmount <= maxStackSize || maxStackSize == 1) {
+            return TooltipUtils.translate(stackPattern, TooltipUtils.formatNumbers(stackAmount));
         }
 
-        final int remainder = (int) (stackSize % maxStackSize);
+        final int remainder = (int) (stackAmount % maxStackSize);
 
         if (remainder > 0) {
-            return String.format(
+            return TooltipUtils.translate(
                 fullPattern,
-                ClientUtil.formatNumbers(stackSize),
-                ClientUtil.formatNumbers(stackSize / maxStackSize),
-                ClientUtil.formatNumbers(maxStackSize),
-                ClientUtil.formatNumbers(remainder));
+                TooltipUtils.formatNumbers(stackAmount),
+                TooltipUtils.formatNumbers(stackAmount / maxStackSize),
+                TooltipUtils.formatNumbers(maxStackSize),
+                TooltipUtils.formatNumbers(remainder));
         } else {
-            return String.format(
+            return TooltipUtils.translate(
                 shortPattern,
-                ClientUtil.formatNumbers(stackSize),
-                ClientUtil.formatNumbers(stackSize / maxStackSize),
-                ClientUtil.formatNumbers(maxStackSize));
+                TooltipUtils.formatNumbers(stackAmount),
+                TooltipUtils.formatNumbers(stackAmount / maxStackSize),
+                TooltipUtils.formatNumbers(maxStackSize));
         }
     }
 

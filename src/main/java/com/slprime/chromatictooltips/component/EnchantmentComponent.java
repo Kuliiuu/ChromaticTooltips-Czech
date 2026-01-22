@@ -15,8 +15,8 @@ import com.slprime.chromatictooltips.ChromaticTooltips;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.config.EnricherConfig;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class EnchantmentComponent implements ITooltipComponent {
 
@@ -35,7 +35,7 @@ public class EnchantmentComponent implements ITooltipComponent {
 
     protected EnchantmentComponent(ResourceLocation resourceLocation, String title, List<String> hint) {
         this.hint = EnricherConfig.enchantmentHintEnabled ? hint : Collections.emptyList();
-        this.colorCodeIndex = ClientUtil.getColorCodeIndex(title);
+        this.colorCodeIndex = TooltipUtils.getColorCodeIndex(title);
         this.resourceLocation = resourceLocation;
         this.title = title;
 
@@ -114,7 +114,7 @@ public class EnchantmentComponent implements ITooltipComponent {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-        ClientUtil.bindTexture(this.resourceLocation);
+        TooltipUtils.bindTexture(this.resourceLocation);
 
         GL11.glColor4f((shadow >> 16) / 255.0F, (shadow >> 8 & 255) / 255.0F, (shadow & 255) / 255.0F, 1);
         drawQuad(x + 1, y + 1, ICON_SIZE, ICON_SIZE);

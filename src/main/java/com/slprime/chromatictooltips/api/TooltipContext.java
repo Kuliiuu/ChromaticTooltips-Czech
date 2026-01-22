@@ -10,13 +10,16 @@ import java.util.List;
 
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.slprime.chromatictooltips.component.SectionComponent;
-import com.slprime.chromatictooltips.util.ClientUtil;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class TooltipContext {
 
-    protected ItemStack stack;
+    protected ItemStack itemStack;
+    protected FluidStack fluidStack;
+
     protected long animationStartTime;
     protected final String context;
     protected List<ITooltipComponent> contextTooltip = new ArrayList<>();
@@ -27,8 +30,6 @@ public class TooltipContext {
 
     protected final ITooltipRenderer renderer;
     protected int revision = 0;
-    protected int mouseX;
-    protected int mouseY;
 
     protected List<SectionComponent> pagedComponents = null;
     protected Dimension tooltipSize;
@@ -39,19 +40,18 @@ public class TooltipContext {
         this.renderer = renderer;
         this.context = request.context;
         this.animationStartTime = System.currentTimeMillis();
-        this.stack = request.stack != null ? request.stack.copy() : null;
+
+        this.itemStack = request.itemStack != null ? request.itemStack.copy() : null;
+        this.fluidStack = request.fluidStack != null ? request.fluidStack.copy() : null;
+
         this.contextTooltip = request.tooltip.buildComponents(this);
-        this.scaleFactor = ClientUtil.getTooltipScale();
+        this.scaleFactor = TooltipUtils.getTooltipScale();
     }
 
-    public void setStack(ItemStack stack) {
-        this.stack = stack != null ? stack.copy() : null;
-        this.revision++;
-    }
-
-    public void setPosition(Point mouse) {
-        this.mouseX = mouse.x;
-        this.mouseY = mouse.y;
+    public TooltipContext(TooltipRequest request, TooltipContext previousContext) {
+        this(request, previousContext.renderer);
+        this.animationStartTime = previousContext.animationStartTime;
+        this.currentPage = previousContext.currentPage;
     }
 
     public String getContextName() {
@@ -60,14 +60,6 @@ public class TooltipContext {
 
     public long getAnimationStartTime() {
         return this.animationStartTime;
-    }
-
-    public int getMouseX() {
-        return this.mouseX;
-    }
-
-    public int getMouseY() {
-        return this.mouseY;
     }
 
     public ITooltipRenderer getRenderer() {
@@ -79,10 +71,6 @@ public class TooltipContext {
             .getAsStyle(path);
     }
 
-    public int getScaleFactor() {
-        return this.scaleFactor;
-    }
-
     public void setScaleFactor(int scaleFactor) {
         if (this.scaleFactor != scaleFactor) {
             this.scaleFactor = scaleFactor;
@@ -90,8 +78,16 @@ public class TooltipContext {
         }
     }
 
-    public ItemStack getStack() {
-        return this.stack;
+    public int getScaleFactor() {
+        return this.scaleFactor;
+    }
+
+    public ItemStack getItemStack() {
+        return this.itemStack;
+    }
+
+    public FluidStack getFluidStack() {
+        return this.fluidStack;
     }
 
     public void supportModifiers(TooltipModifier... modifiers) {
@@ -113,11 +109,6 @@ public class TooltipContext {
             this.activeModifier = activeModifier;
             this.revision++;
         }
-    }
-
-    public void setContextTooltip(TooltipLines tooltip) {
-        this.contextTooltip = tooltip.buildComponents(this);
-        this.revision++;
     }
 
     public List<ITooltipComponent> getContextTooltip() {
@@ -143,11 +134,6 @@ public class TooltipContext {
 
     public int getRevision() {
         return this.revision;
-    }
-
-    public void clear() {
-        this.lines.clear();
-        this.revision++;
     }
 
     public boolean isEmpty() {
@@ -198,7 +184,7 @@ public class TooltipContext {
                 return null;
             }
 
-            final float scaleShift = (float) getScaleFactor() / ClientUtil.getScaledResolution()
+            final float scaleShift = (float) this.scaleFactor / TooltipUtils.getScaledResolution()
                 .getScaleFactor();
 
             this.tooltipSize = new Dimension(
@@ -209,22 +195,20 @@ public class TooltipContext {
         return this.tooltipSize;
     }
 
-    public void draw() {
-        if (!isEmpty()) {
-            final Point position = prepareTooltipPosition(this.mouseX, this.mouseY);
-            draw(position.x, position.y);
-        }
+    public void drawAtMousePosition(int mouseX, int mouseY) {
+        final Point position = prepareTooltipPosition(mouseX, mouseY);
+        drawAt(position.x, position.y);
     }
 
-    public void draw(int x, int y) {
+    public void drawAt(int x, int y) {
         if (!isEmpty()) {
             this.renderer.draw(this, x, y);
         }
     }
 
     protected Point prepareTooltipPosition(int mouseX, int mouseY) {
-        final ScaledResolution freeSpace = ClientUtil.getScaledResolution();
-        final float scaleShift = (float) getScaleFactor() / freeSpace.getScaleFactor();
+        final ScaledResolution freeSpace = TooltipUtils.getScaledResolution();
+        final float scaleShift = (float) this.scaleFactor / freeSpace.getScaleFactor();
         final Dimension tooltipSize = getTooltipSize();
         final int offsetMain = (int) (this.renderer.getMainAxisOffset() * scaleShift);
         final int offsetCross = (int) (this.renderer.getCrossAxisOffset() * scaleShift);

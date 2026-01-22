@@ -8,8 +8,8 @@ import net.minecraft.util.EnumChatFormatting;
 import com.slprime.chromatictooltips.api.ITooltipComponent;
 import com.slprime.chromatictooltips.api.TooltipContext;
 import com.slprime.chromatictooltips.api.TooltipModifier;
-import com.slprime.chromatictooltips.util.ClientUtil;
 import com.slprime.chromatictooltips.util.TooltipFontContext;
+import com.slprime.chromatictooltips.util.TooltipUtils;
 
 public class KeyboardModifierComponent implements ITooltipComponent {
 
@@ -30,7 +30,7 @@ public class KeyboardModifierComponent implements ITooltipComponent {
             .asList(TooltipModifier.SHIFT, TooltipModifier.CTRL, TooltipModifier.ALT)) {
             if (this.supportedModifiers.contains(modifier)) {
                 final String state = this.activeModifier == modifier ? "active" : "inactive";
-                this.text += ClientUtil.translate(
+                this.text += TooltipUtils.translate(
                     "enricher.keyboard-modifier." + modifier.name()
                         .toLowerCase() + "." + state)
                     + " ";
