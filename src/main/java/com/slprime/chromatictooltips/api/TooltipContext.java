@@ -185,7 +185,7 @@ public class TooltipContext {
                 return null;
             }
 
-            final float scaleShift = (float) this.scaleFactor / TooltipUtils.getScaledResolution()
+            final double scaleShift = (double) this.scaleFactor / TooltipUtils.getScaledResolution()
                 .getScaleFactor();
 
             this.tooltipSize = new Dimension(

@@ -75,7 +75,7 @@ public class EnchantmentEnricher implements ITooltipEnricher {
             return null;
         }
 
-        final List<EnchantmentData> enchantments = getEnchantments(context, stack);
+        final List<EnchantmentData> enchantments = getEnchantments(context);
         final TooltipLines enchantmentsList = new TooltipLines();
 
         for (final EnchantmentData enchantmentData : enchantments) {
@@ -85,10 +85,10 @@ public class EnchantmentEnricher implements ITooltipEnricher {
         return enchantmentsList;
     }
 
-    protected static List<EnchantmentData> getEnchantments(TooltipContext context, ItemStack stack) {
+    protected static List<EnchantmentData> getEnchantments(TooltipContext context) {
         final List<EnchantmentData> enchantmentList = new ArrayList<>();
 
-        for (Map.Entry<Integer, Integer> entry : EnchantmentHelper.getEnchantments(stack)
+        for (Map.Entry<Integer, Integer> entry : EnchantmentHelper.getEnchantments(context.getItem())
             .entrySet()) {
             if (Enchantment.enchantmentsList[entry.getKey()] != null) {
                 enchantmentList.add(new EnchantmentData(entry.getKey(), entry.getValue()));

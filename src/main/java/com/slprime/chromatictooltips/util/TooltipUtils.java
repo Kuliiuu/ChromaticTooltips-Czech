@@ -32,7 +32,6 @@ import com.slprime.chromatictooltips.ChromaticTooltips;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.config.GeneralConfig;
 
-import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.Event;
 
 public class TooltipUtils {
@@ -58,8 +57,6 @@ public class TooltipUtils {
     private static final int SHIFT_HASH = 1 << 26;
     private static final int CTRL_HASH = 1 << 25;
     private static final GuiHook gui = new GuiHook();
-
-    public static final boolean isHodgepodgeLoaded = Loader.isModLoaded("hodgepodge");
 
     private static DecimalFormat getDecimalFormat() {
         return decimalFormatters.computeIfAbsent(Locale.getDefault(Locale.Category.FORMAT), locale -> {

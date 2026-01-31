@@ -378,7 +378,11 @@ public class TooltipHandler {
         return bodySections;
     }
 
-    protected static ITooltipRenderer getRendererFor(TooltipRequest request) {
+    public static boolean hasTooltipRendererFor(TooltipRequest request) {
+        return getRendererFor(request) != TooltipHandler.defaultTooltipRenderer;
+    }
+
+    public static ITooltipRenderer getRendererFor(TooltipRequest request) {
         final String fallbackContext = request.target.isItem() ? "item"
             : (request.target.isFluid() ? "fluid" : "default");
         final String context = request.context != null ? request.context : fallbackContext;

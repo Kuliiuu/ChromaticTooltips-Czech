@@ -15,7 +15,7 @@ import net.minecraftforge.fluids.FluidStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
-import com.mitchej123.hodgepodge.textures.IPatchedTextureAtlasSprite;
+import com.slprime.chromatictooltips.ChromaticTooltips;
 
 public class TooltipRenderUtils {
 
@@ -125,16 +125,19 @@ public class TooltipRenderUtils {
             return;
         }
 
-        if (TooltipUtils.isHodgepodgeLoaded && fluidIcon instanceof IPatchedTextureAtlasSprite patchedTexture) {
-            patchedTexture.markNeedsAnimationUpdate();
-        }
-
         drawIromIcon(() -> {
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_ALPHA_TEST);
             TooltipUtils.bindTexture(TextureMap.locationBlocksTexture);
-            GL11.glColor3f(
-                (fluidColor >> 16 & 255) / 255.0F,
-                (fluidColor >> 8 & 255) / 255.0F,
-                (fluidColor & 255) / 255.0F);
+
+            float a = (fluidColor >> 24 & 255) / 255F;
+            float r = (fluidColor >> 16 & 255) / 255F;
+            float g = (fluidColor >> 8 & 255) / 255F;
+            float b = (fluidColor & 255) / 255F;
+            a = a == 0f ? 1f : a;
+
+            GL11.glColor4f(r, g, b, a);
+
             TooltipUtils.mc().currentScreen.drawTexturedModelRectFromIcon(0, 0, fluidIcon, 16, 16);
             GL11.glColor3f(1f, 1f, 1f);
 
@@ -150,7 +153,11 @@ public class TooltipRenderUtils {
         GL11.glEnable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
 
-        drawIcon.run();
+        try {
+            drawIcon.run();
+        } catch (Exception e) {
+            ChromaticTooltips.LOG.error("renderStack Item/Fluid Stack Error", e);
+        }
 
         if (stackAmount > 1) {
             drawStackSize(stackAmount, fluid);
