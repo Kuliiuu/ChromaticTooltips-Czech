@@ -49,9 +49,9 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
 
-        TooltipUtils.registerEvent(this);
-        TooltipUtils.registerEvent(new FoodEffectsHandler());
-        TooltipUtils.registerEvent(new FoodStatsHandler());
+        TooltipUtils.registerEventListener(this);
+        TooltipUtils.registerEventListener(new FoodEffectsHandler());
+        TooltipUtils.registerEventListener(new FoodStatsHandler());
 
         ClientRegistry.registerKeyBinding(nextPage);
         ClientRegistry.registerKeyBinding(previousPage);

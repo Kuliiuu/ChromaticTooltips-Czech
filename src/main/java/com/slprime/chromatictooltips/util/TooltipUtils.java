@@ -68,7 +68,7 @@ public class TooltipUtils {
         return MinecraftForge.EVENT_BUS.post(event);
     }
 
-    public static void registerEvent(Object handler) {
+    public static void registerEventListener(Object handler) {
         FMLCommonHandler.instance()
             .bus()
             .register(handler);
