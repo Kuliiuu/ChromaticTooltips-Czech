@@ -25,6 +25,7 @@ import com.slprime.chromatictooltips.ChromaticTooltips;
 import com.slprime.chromatictooltips.api.TooltipModifier;
 import com.slprime.chromatictooltips.config.GeneralConfig;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.Event;
 
 public class TooltipUtils {
@@ -65,6 +66,13 @@ public class TooltipUtils {
 
     public static boolean postEvent(Event event) {
         return MinecraftForge.EVENT_BUS.post(event);
+    }
+
+    public static void registerEvent(Object handler) {
+        FMLCommonHandler.instance()
+            .bus()
+            .register(handler);
+        MinecraftForge.EVENT_BUS.register(handler);
     }
 
     public static GuiContainer getGuiContainer() {

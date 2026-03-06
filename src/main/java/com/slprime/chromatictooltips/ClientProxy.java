@@ -5,7 +5,6 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.event.GuiScreenEvent.DrawScreenEvent;
-import net.minecraftforge.common.MinecraftForge;
 
 import org.lwjgl.input.Keyboard;
 
@@ -22,10 +21,11 @@ import com.slprime.chromatictooltips.enricher.ModInfoEnricher;
 import com.slprime.chromatictooltips.enricher.OreDictionaryEnricher;
 import com.slprime.chromatictooltips.enricher.StackSizeEnricher;
 import com.slprime.chromatictooltips.enricher.TitleEnricher;
+import com.slprime.chromatictooltips.handlers.FoodEffectsHandler;
+import com.slprime.chromatictooltips.handlers.FoodStatsHandler;
 import com.slprime.chromatictooltips.util.TooltipUtils;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
-import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
@@ -49,10 +49,9 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
 
-        FMLCommonHandler.instance()
-            .bus()
-            .register(this);
-        MinecraftForge.EVENT_BUS.register(this);
+        TooltipUtils.registerEvent(this);
+        TooltipUtils.registerEvent(new FoodEffectsHandler());
+        TooltipUtils.registerEvent(new FoodStatsHandler());
 
         ClientRegistry.registerKeyBinding(nextPage);
         ClientRegistry.registerKeyBinding(previousPage);

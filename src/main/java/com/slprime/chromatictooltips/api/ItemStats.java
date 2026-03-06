@@ -174,7 +174,7 @@ public class ItemStats {
             final int amplifier = potionEffect.getAmplifier();
 
             if (amplifier > 0) {
-                final String potencyKey = "potion.potency." + amplifier;
+                final String potencyKey = "enchantment.level." + (amplifier + 1);
                 final String potency = StatCollector.translateToLocal(potencyKey);
                 textLine += " "
                     + (potency.equals(potencyKey) ? NumberFormatUtil.formatNumber(amplifier + 1) : potency.trim());
