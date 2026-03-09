@@ -5,6 +5,11 @@
 **Chromatic Tooltips** — клиентский мод для Minecraft, который превращает tooltip'ы в полностью настраиваемую UI-систему.
 Вся кастомизация выполняется через ресурспаки с помощью декларативного JSON, без Java-кода и пересборки.
 
+# Установка
+1. Установите [ChromaticTooltips](https://github.com/slprime/ChromaticTooltips/releases)
+1. Установите [ChromaticTooltipsCompat](https://github.com/slprime/ChromaticTooltipsCompat/releases)
+1. Выберите и установите один из ресурспаков из списка в [первом issue](https://github.com/slprime/ChromaticTooltips/issues/1)
+
 ## 1. Overview — Что это такое
 
 Chromatic Tooltips позволяет:

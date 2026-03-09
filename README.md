@@ -5,6 +5,11 @@
 **Chromatic Tooltips** is a client-side mod for Minecraft that transforms tooltips into a fully customizable UI system.
 All customization is done through resource packs using declarative JSON, without Java code and recompilation.
 
+# Installation
+1. Install [ChromaticTooltips](https://github.com/slprime/ChromaticTooltips/releases)
+1. Install [ChromaticTooltipsCompat](https://github.com/slprime/ChromaticTooltipsCompat/releases)
+1. Choose and install one of the resource packs listed in the [first issue](https://github.com/slprime/ChromaticTooltips/issues/1)
+
 ## 1. Overview — What is it
 
 Chromatic Tooltips allows you to:
